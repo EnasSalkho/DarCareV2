@@ -1,0 +1,852 @@
+{
+  "info": {
+    "_postman_id": "darcare-v1-api-collection",
+    "name": "DarCare API",
+    "description": "Postman collection generated from routes/api.php and module route files.\n\nBase URL: `{{base_url}}`\n\n- Most endpoints: `/api/v1/...`\n- Dashboard module (loaded via DashboardServiceProvider): `/api/admin/...` (no v1 prefix)\n\nRun **Login User** or **Login Provider** first; the token is saved automatically to `{{token}}` for Bearer auth on protected routes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "id",
+      "value": "1"
+    },
+    {
+      "key": "providerId",
+      "value": "1"
+    },
+    {
+      "key": "requestId",
+      "value": "1"
+    },
+    {
+      "key": "addressId",
+      "value": "1"
+    },
+    {
+      "key": "categoryId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "app/Modules/Auth/routes/api.php",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"phone\": \"+966500000001\",\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"address\": {\n    \"latitude\": 24.7136,\n    \"longitude\": 46.6753,\n    \"label\": \"home\"\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/auth/register/user",
+            "description": "POST auth/register/user"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const token = json?.data?.token || json?.data?.user?.token;",
+                  "if (token) pm.collectionVariables.set('token', token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Provider",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Ahmed Provider", "type": "text" },
+                { "key": "phone", "value": "+966500000002", "type": "text" },
+                { "key": "email", "value": "provider@example.com", "type": "text" },
+                { "key": "password", "value": "password123", "type": "text" },
+                { "key": "password_confirmation", "value": "password123", "type": "text" },
+                { "key": "years_of_experience", "value": "5", "type": "text" },
+                { "key": "bio", "value": "Experienced technician", "type": "text" },
+                { "key": "profile_image", "type": "file", "src": [] },
+                { "key": "category_ids[]", "value": "1", "type": "text" },
+                { "key": "address[latitude]", "value": "24.7136", "type": "text" },
+                { "key": "address[longitude]", "value": "46.6753", "type": "text" },
+                { "key": "address[label]", "value": "work", "type": "text" }
+              ]
+            },
+            "url": "{{base_url}}/api/v1/auth/register/provider",
+            "description": "POST auth/register/provider (multipart/form-data)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const token = json?.data?.token;",
+                  "if (token) pm.collectionVariables.set('token', token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/auth/login/user",
+            "description": "POST auth/login/user"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const token = json?.data?.token;",
+                  "if (token) pm.collectionVariables.set('token', token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Provider",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"provider@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/auth/login/provider",
+            "description": "POST auth/login/provider"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const token = json?.data?.token;",
+                  "if (token) pm.collectionVariables.set('token', token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/auth/logout",
+            "description": "POST auth/logout (requires auth:sanctum)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "app/Modules/Users/routes/api.php",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/user/profile",
+            "description": "GET user/profile (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Updated Name", "type": "text" },
+                { "key": "phone", "value": "+966500000099", "type": "text" },
+                { "key": "profile_image", "type": "file", "src": [], "disabled": true }
+              ]
+            },
+            "url": "{{base_url}}/api/v1/user/profile",
+            "description": "POST user/profile (auth:sanctum). Supports multipart for profile_image."
+          }
+        },
+        {
+          "name": "Admin - List Users",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users?search=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "users"],
+              "query": [
+                { "key": "search", "value": "", "description": "Optional search filter" }
+              ]
+            },
+            "description": "GET admin/users"
+          }
+        },
+        {
+          "name": "Admin - Delete User",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/users/{{id}}",
+            "description": "DELETE admin/users/{id}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Providers",
+      "description": "app/Modules/Providers/routes/api.php",
+      "item": [
+        {
+          "name": "Search Providers",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/providers/search?name=&category_id=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "providers", "search"],
+              "query": [
+                { "key": "name", "value": "", "description": "Optional provider name" },
+                { "key": "category_id", "value": "", "description": "Optional category filter" }
+              ]
+            },
+            "description": "GET providers/search"
+          }
+        },
+        {
+          "name": "Nearby Providers",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/providers/nearby?latitude=24.7136&longitude=46.6753&radius=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "providers", "nearby"],
+              "query": [
+                { "key": "latitude", "value": "24.7136", "description": "Required" },
+                { "key": "longitude", "value": "46.6753", "description": "Required" },
+                { "key": "radius", "value": "10", "description": "Optional, default 10, max 100" }
+              ]
+            },
+            "description": "GET providers/nearby"
+          }
+        },
+        {
+          "name": "Show Provider",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/providers/{{providerId}}",
+            "description": "GET providers/{id}"
+          }
+        },
+        {
+          "name": "Provider - Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/provider/profile",
+            "description": "GET provider/profile (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Provider - Update Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Updated Provider", "type": "text" },
+                { "key": "phone", "value": "+966500000003", "type": "text" },
+                { "key": "bio", "value": "Updated bio", "type": "text" },
+                { "key": "years_of_experience", "value": "6", "type": "text" },
+                { "key": "profile_image", "type": "file", "src": [], "disabled": true }
+              ]
+            },
+            "url": "{{base_url}}/api/v1/provider/profile",
+            "description": "POST provider/profile (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Provider - Toggle Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/provider/toggle-status",
+            "description": "PATCH provider/toggle-status (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Admin - List Providers",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/providers?status=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "providers"],
+              "query": [
+                { "key": "status", "value": "", "description": "available | busy | suspended" }
+              ]
+            },
+            "description": "GET admin/providers"
+          }
+        },
+        {
+          "name": "Admin - Update Provider Status",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"suspended\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/admin/providers/{{providerId}}/status",
+            "description": "PATCH admin/providers/{id}/status. Status: available, busy, suspended"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Locations",
+      "description": "app/Modules/Locations/routes/api.php",
+      "item": [
+        {
+          "name": "List Addresses",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/addresses",
+            "description": "GET addresses (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Create Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"label\": \"home\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/addresses",
+            "description": "POST addresses (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Set Primary Address",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/addresses/{{addressId}}/primary",
+            "description": "PATCH addresses/{addressId}/primary (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/addresses/{{addressId}}",
+            "description": "DELETE addresses/{addressId} (auth:sanctum)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "description": "app/Modules/Categories/routes/api.php",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/categories",
+            "description": "GET categories"
+          }
+        },
+        {
+          "name": "Show Category",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/categories/{{categoryId}}",
+            "description": "GET categories/{id}"
+          }
+        },
+        {
+          "name": "Admin - List Categories",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/categories",
+            "description": "GET admin/categories (apiResource index)"
+          }
+        },
+        {
+          "name": "Admin - Create Category",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Plumbing\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/admin/categories",
+            "description": "POST admin/categories (apiResource store)"
+          }
+        },
+        {
+          "name": "Admin - Update Category",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Plumbing & Sanitary\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/admin/categories/{{categoryId}}",
+            "description": "PUT admin/categories/{category} (apiResource update)"
+          }
+        },
+        {
+          "name": "Admin - Delete Category",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/categories/{{categoryId}}",
+            "description": "DELETE admin/categories/{category} (apiResource destroy)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Service Requests",
+      "description": "app/Modules/ServiceRequests/routes/api.php",
+      "item": [
+        {
+          "name": "Create Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "provider_id", "value": "1", "type": "text" },
+                { "key": "category_id", "value": "1", "type": "text" },
+                { "key": "address_id", "value": "1", "type": "text", "disabled": true },
+                { "key": "description", "value": "Need urgent plumbing repair", "type": "text" },
+                { "key": "urgency", "value": "urgent", "type": "text" },
+                { "key": "image", "type": "file", "src": [], "disabled": true },
+                { "key": "temp_latitude", "value": "24.7136", "type": "text", "disabled": true },
+                { "key": "temp_longitude", "value": "46.6753", "type": "text", "disabled": true },
+                { "key": "temp_label", "value": "home", "type": "text", "disabled": true }
+              ]
+            },
+            "url": "{{base_url}}/api/v1/requests",
+            "description": "POST requests (auth:sanctum)"
+          }
+        },
+        {
+          "name": "My Requests (User)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/requests/my",
+            "description": "GET requests/my (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Incoming Requests (Provider)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/requests/incoming",
+            "description": "GET requests/incoming (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Update Request Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"accepted\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/requests/{{requestId}}/status",
+            "description": "PATCH requests/{id}/status (auth:sanctum). Status: accepted, rejected, delayed. Use scheduled_at when status is delayed."
+          }
+        },
+        {
+          "name": "Show Request",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/requests/{{requestId}}",
+            "description": "GET requests/{id} (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Admin - List Service Requests",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/service-requests?status=&urgency=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "service-requests"],
+              "query": [
+                { "key": "status", "value": "" },
+                { "key": "urgency", "value": "" }
+              ]
+            },
+            "description": "GET admin/service-requests"
+          }
+        },
+        {
+          "name": "Admin - Show Service Request",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/service-requests/{{requestId}}",
+            "description": "GET admin/service-requests/{id}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "description": "app/Modules/Chat/routes/api.php",
+      "item": [
+        {
+          "name": "List Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/requests/{{requestId}}/messages",
+            "description": "GET requests/{requestId}/messages (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Hello, when can you arrive?\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/requests/{{requestId}}/messages",
+            "description": "POST requests/{requestId}/messages (auth:sanctum)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "app/Modules/Notifications/routes/api.php",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/notifications",
+            "description": "GET notifications (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Mark All Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/notifications/read-all",
+            "description": "PATCH notifications/read-all (auth:sanctum)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Favorites",
+      "description": "app/Modules/Favorites/routes/api.php",
+      "item": [
+        {
+          "name": "List Favorites",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/favorites",
+            "description": "GET favorites (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Toggle Favorite",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/favorites/{{providerId}}/toggle",
+            "description": "POST favorites/{providerId}/toggle (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Admin - Top Favorited Providers",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/favorites/top-providers",
+            "description": "GET admin/favorites/top-providers"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ratings",
+      "description": "app/Modules/Ratings/routes/api.php",
+      "item": [
+        {
+          "name": "Create Rating",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider_id\": 1,\n  \"service_request_id\": 1,\n  \"rating\": 5,\n  \"comment\": \"Excellent service!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/ratings",
+            "description": "POST ratings (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Provider Ratings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/ratings/provider/{{providerId}}",
+            "description": "GET ratings/provider/{providerId} (auth:sanctum)"
+          }
+        },
+        {
+          "name": "Admin - List Ratings",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/ratings?rating=&provider_id=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "ratings"],
+              "query": [
+                { "key": "rating", "value": "", "description": "Filter by star rating" },
+                { "key": "provider_id", "value": "", "description": "Filter by provider" }
+              ]
+            },
+            "description": "GET admin/ratings"
+          }
+        },
+        {
+          "name": "Admin - Delete Rating",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/ratings/{{id}}",
+            "description": "DELETE admin/ratings/{id}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "app/Modules/Dashboard/routes/api.php — loaded separately via DashboardServiceProvider (no /v1 prefix)",
+      "item": [
+        {
+          "name": "Admin - Dashboard Stats",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/admin/dashboard/stats",
+            "description": "GET admin/dashboard/stats at /api/admin/... (not /api/v1/admin/...)"
+          }
+        }
+      ]
+    }
+  ]
+}

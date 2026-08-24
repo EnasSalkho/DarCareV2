@@ -1,0 +1,17 @@
+<?php
+// routes/api.php
+
+use Illuminate\Support\Facades\Route;
+
+Route::prefix('v1')->group(function () {
+    require base_path('app/Modules/Auth/routes/api.php');
+    require base_path('app/Modules/Users/routes/api.php');
+    require base_path('app/Modules/Providers/routes/api.php');
+    require base_path('app/Modules/Categories/routes/api.php');
+    require base_path('app/Modules/ServiceRequests/routes/api.php');
+    require base_path('app/Modules/Chat/routes/api.php');
+    require base_path('app/Modules/Notifications/routes/api.php');
+    require base_path('app/Modules/Favorites/routes/api.php');
+    require base_path('app/Modules/Ratings/routes/api.php');
+    require base_path('app/Modules/Dashboard/routes/api.php');
+});

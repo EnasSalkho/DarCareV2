@@ -1,0 +1,117 @@
+### متغيرات أساسية لتسهيل الشغل
+@baseUrl = http://127.0.0.1:8000
+
+
+### 1. اختبار رابط الإحصائيات الرئيسي (Dashboard Summary)
+GET {{baseUrl}}/api/admin/dashboard/stats
+Accept: application/json
+
+###
+
+### 2. جلب قائمة الفنيين والمزودين
+GET {{baseUrl}}/api/v1/admin/providers
+Accept: application/json
+
+###
+
+### 3. تعديل حالة فني (مثلاً حظر الفني رقم 1)
+PATCH {{baseUrl}}/api/v1/admin/providers/1/status
+Accept: application/json
+Content-Type: application/json
+
+{
+    "status": "suspended"
+}
+
+###
+
+### 4. جلب قائمة طلبات الصيانة العامة
+GET {{baseUrl}}/api/v1/admin/service-requests
+Accept: application/json
+
+###
+
+### 5. جلب قائمة الزبائن (العملاء)
+GET {{baseUrl}}/api/v1/admin/users
+Accept: application/json
+
+
+### 6. جلب تقييمات الحرفيين في لوحة التحكم
+### 6. جلب تقييمات ومراجعات الفنيين (بالمسار الحقيقي المكتشف)
+### 6. جلب تقييمات الحرفيين في لوحة التحكم
+GET {{baseUrl}}/api/v1/admin/ratings
+Accept: application/json
+
+### 7. حذف تقييم مسيء أو غير لائق
+DELETE {{baseUrl}}/api/v1/admin/ratings/1
+Accept: application/json
+###
+GET {{baseUrl}}/api/v1/admin/ratings?rating=1
+Accept: application/json
+
+
+
+### 8. جلب جميع تصنيفات الخدمات (سباكة، كهرباء...)
+GET {{baseUrl}}/api/v1/admin/categories
+Accept: application/json
+
+###
+
+### 9. إضافة تصنيف جديد للسيستم
+POST {{baseUrl}}/api/v1/admin/categories
+Accept: application/json
+Content-Type:
+
+{
+    "name": "صيانة تكييف وتبريد"
+}
+
+###
+
+### 10. تعديل تصنيف موجود (مثلاً رقم 1)
+PUT {{baseUrl}}/api/v1/admin/categories/9
+Accept: application/json
+Content-Type: application/json
+
+{
+    "name": "السباكة والأعمال الصحية"
+}
+
+###
+
+### 11. حذف تصنيف من السيستم
+DELETE {{baseUrl}}/api/v1/admin/categories/1
+Accept: application/json
+
+
+### 12. جلب الحرفيين الأكثر شعبية وإضافة في المفضلة
+GET {{baseUrl}}/api/v1/admin/favorites/top-providers
+Accept: application/json
+
+
+### 16. إرسال إشعار فوري وجماعي عبر Firebase لجميع الأجهزة بالسيستم
+POST {{baseUrl}}/api/v1/admin/notifications/send-bulk
+Accept: application/json
+Content-Type: application/json
+
+{
+    "target": "all",
+    "user_id": 2,
+    "title": "تنبيه طوارئ 🚨",
+    "message": "مرحباً بكم في تطبيق Dar Care، تم تحديث نظام الخرائط لسرعة الوصول للحرفيين."
+}
+
+
+###
+POST http://127.0.0.1:8000/api/v1/auth/admin/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "password123"
+}
+### 17. جلب قائمة أسماء وi d المستخدمين للإشعارات
+GET {{baseUrl}}/api/v1/admin/notifications/users-list
+Accept: application/json
+Authorization: Bearer 4|rZJXQNuUZPq3nvEmf0yz7LTGI7FHQMsl6bcMBIMKbbdad711

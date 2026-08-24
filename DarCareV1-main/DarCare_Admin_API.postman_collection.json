@@ -1,0 +1,401 @@
+{
+  "info": {
+    "_postman_id": "darcare-admin-api-collection",
+    "name": "DarCare Admin API",
+    "description": "Admin-only routes from module api.php files and routes/api.php.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" },
+    { "key": "token", "value": "" },
+    { "key": "admin_token", "value": "" },
+    { "key": "id", "value": "1" },
+    { "key": "providerId", "value": "1" },
+    { "key": "provider_id", "value": "1" },
+    { "key": "requestId", "value": "1" },
+    { "key": "categoryId", "value": "1" },
+    { "key": "category_id", "value": "1" },
+    { "key": "year", "value": "2026" }
+  ],
+  "item": [
+    {
+      "name": "Dashboard",
+      "description": "app/Modules/Dashboard/routes/api.php",
+      "item": [
+        {
+          "name": "Get Summary Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/dashboard/stats",
+            "description": "GET /api/v1/admin/dashboard/stats — quick summary counters"
+          }
+        },
+        {
+          "name": "Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/dashboard/overview",
+            "description": "GET /api/v1/admin/dashboard/overview — latest requests/ratings, top artisans, category distribution"
+          }
+        },
+        {
+          "name": "Monthly Request Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/dashboard/request-statistics/monthly?year={{year}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "dashboard", "request-statistics", "monthly"],
+              "query": [
+                { "key": "year", "value": "{{year}}" },
+                { "key": "category_id", "value": "{{category_id}}", "disabled": true },
+                { "key": "provider_id", "value": "{{provider_id}}", "disabled": true }
+              ]
+            },
+            "description": "GET /api/v1/admin/dashboard/request-statistics/monthly?year=2026 — optional category_id and provider_id filters"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "app/Modules/Users/routes/api.php",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/users?search=",
+            "description": "GET admin/users"
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/users/{{id}}",
+            "description": "DELETE admin/users/{id} — soft delete"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Providers",
+      "description": "app/Modules/Providers/routes/api.php",
+      "item": [
+        {
+          "name": "List Providers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/providers?status=",
+            "description": "GET admin/providers"
+          }
+        },
+        {
+          "name": "Update Provider Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"suspended\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/admin/providers/{{providerId}}/status",
+            "description": "PATCH admin/providers/{id}/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Service Requests",
+      "description": "app/Modules/ServiceRequests/routes/api.php",
+      "item": [
+        {
+          "name": "List Service Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/service-requests?status=&urgency=",
+            "description": "GET admin/service-requests"
+          }
+        },
+        {
+          "name": "Show Service Request",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/service-requests/{{requestId}}",
+            "description": "GET admin/service-requests/{id}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "description": "app/Modules/Categories/routes/api.php",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/categories",
+            "description": "GET admin/categories"
+          }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"صيانة تكييف وتبريد\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/admin/categories",
+            "description": "POST admin/categories"
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"السباكة والأعمال الصحية\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/admin/categories/{{categoryId}}",
+            "description": "PUT admin/categories/{id}"
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/categories/{{categoryId}}",
+            "description": "DELETE admin/categories/{id}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ratings",
+      "description": "app/Modules/Ratings/routes/api.php",
+      "item": [
+        {
+          "name": "List Ratings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/ratings?rating=&provider_id=",
+            "description": "GET admin/ratings"
+          }
+        },
+        {
+          "name": "Delete Rating",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/ratings/{{id}}",
+            "description": "DELETE admin/ratings/{id}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Favorites",
+      "description": "app/Modules/Favorites/routes/api.php",
+      "item": [
+        {
+          "name": "Top Favorited Providers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/v1/admin/favorites/top-providers",
+            "description": "GET admin/favorites/top-providers"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "app/Modules/Notifications/routes/api.php",
+      "item": [
+        {
+          "name": "Send Bulk Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"all\",\n  \"title\": \"تنبيه طوارئ من إدارة دار كير\",\n  \"message\": \"مرحباً بكم في تطبيق Dar Care\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/admin/notifications/send-bulk",
+            "description": "POST admin/notifications/send-bulk — target: all | users | providers"
+          }
+        }
+      ]
+    },
+    {
+  "name": "Chat System",
+  "description": "روابط نظام المحادثات المباشرة بين العميل ومقدم الخدمة تتبع لموديول الـ Chat",
+  "item": [
+    {
+      "name": "Get Chat Messages",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/requests/{{requestId}}/messages",
+          "host": [ "{{base_url}}" ],
+          "path": [ "api", "requests", "{{requestId}}", "messages" ]
+        },
+        "description": "جلب جميع الرسائل المتبادلة لطلب خدمة معين مرتبة زمنياً من الأقدم للأحدث."
+      }
+    },
+    {
+      "name": "Send Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"body\": \"مرحباً، أنا في الطريق إليك الآن لفحص العطل.\"\n}",
+          "options": {
+            "raw": { "language": "json" }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/requests/{{requestId}}/messages",
+          "host": [ "{{base_url}}" ],
+          "path": [ "api", "requests", "{{requestId}}", "messages" ]
+        },
+        "description": "إرسال رسالة جديدة داخل الشات. النظام يتعرف تلقائياً على نوع المرسل (عميل أو فني) من الـ Token ممرر الصلاحية."
+      }
+    }
+  ]
+},
+
+    {
+    "name": "Admin & Notifications System",
+    "description": "الطلبات الخاصة بتسجيل دخول الآدمن للوحة التحكم، جلب الإشعارات، وتعديل حالة الحرفيين  ",
+    "item": [
+       {
+  "name": "Admin Login",
+  "request": {
+    "method": "POST",
+    "header": [
+      { "key": "Accept", "value": "application/json" },
+      { "key": "Content-Type", "value": "application/json" }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n  \"email\": \"admin@disputes.com\",\n  \"password\": \"12345678\"\n}",
+      "options": {
+        "raw": { "language": "json" }
+      }
+    },
+    "url": {
+      "raw": "{{base_url}}/api/v1/auth/admin/login",
+      "host": [ "{{base_url}}" ],
+      "path": [ "api", "v1", "auth", "admin", "login" ]
+    },
+    "description": "تسجيل دخول الآدمن للوحة التحكم عبر AdminAuthController."
+  }
+},
+        {
+       "name": "Get User Notifications",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/notifications",
+          "host": [ "{{base_url}}" ],
+          "path": [ "api", "v1", "notifications" ]
+        },
+        "description": "جلب كافة الإشعارات الخاصة بالمستخدم عبر دالة index في NotificationController."
+      }
+        },
+
+        {
+  "name": "Get Users List for Notifications",
+  "request": {
+    "method": "GET",
+    "header": [
+      { "key": "Accept", "value": "application/json" },
+      { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+    ],
+    "url": "{{base_url}}/api/v1/admin/notifications/users-list",
+    "description": "GET admin/notifications/users-list — Returns list of users with id and name only"
+  }
+    }
+
+    ]
+    }
+
+  ]
+}
