@@ -50,4 +50,16 @@ class LocationClient
 
         return $response->json('data.0', []);
     }
+    public function getAddress(int $addressId): array
+    {
+        $response = Http::timeout(10)->get(
+            $this->baseUrl . '/api/v1/addresses/id/' . $addressId
+        );
+
+        if ($response->failed()) {
+            return [];
+        }
+
+        return $response->json('data', []);
+    }
 }

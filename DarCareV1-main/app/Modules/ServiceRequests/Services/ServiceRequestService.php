@@ -12,13 +12,15 @@ use App\Modules\ServiceRequests\Models\ServiceRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use App\Services\LocationClient;
 use Throwable;
 
 class ServiceRequestService implements ServiceRequestServiceInterface
 {
     public function __construct(
         private readonly NotificationServiceInterface $notificationService,
-        private readonly ConversationServiceInterface $conversationService
+        private readonly ConversationServiceInterface $conversationService,
+        private readonly LocationClient $locationClient
     ) {}
 
     public function createRequest(int $userId, array $data): object
@@ -59,16 +61,36 @@ class ServiceRequestService implements ServiceRequestServiceInterface
 
     public function getUserRequests(int $userId): mixed
     {
-        return ServiceRequest::where('user_id', $userId)
+        $requests = ServiceRequest::where('user_id', $userId)
             ->orderByDesc('created_at')
             ->paginate(15);
+
+        $requests->getCollection()->transform(function ($request) {
+            $request->address = $request->address_id
+                ? $this->locationClient->getAddress($request->address_id)
+                : null;
+
+            return $request;
+        });
+
+        return $requests;
     }
 
     public function getProviderRequests(int $providerId): mixed
     {
-        return ServiceRequest::where('provider_id', $providerId)
+        $requests = ServiceRequest::where('provider_id', $providerId)
             ->orderByDesc('created_at')
             ->paginate(15);
+
+        $requests->getCollection()->transform(function ($request) {
+            $request->address = $request->address_id
+                ? $this->locationClient->getAddress($request->address_id)
+                : null;
+
+            return $request;
+        });
+
+        return $requests;
     }
 
     public function updateStatus(int $requestId, int $providerId, string $status, ?string $scheduledAt): object
@@ -119,32 +141,60 @@ class ServiceRequestService implements ServiceRequestServiceInterface
 
     public function find(int $requestId): object
     {
-        return ServiceRequest::findOrFail($requestId);
+        $request = ServiceRequest::findOrFail($requestId);
+
+        $request->address = $request->address_id
+            ? $this->locationClient->getAddress($request->address_id)
+            : null;
+
+        return $request;
     }
 
     public function getAllRequestsForAdmin(?string $status, ?string $urgency): mixed
     {
-        $query = ServiceRequest::with([
+        $requests = ServiceRequest::with([
             'user:id,name,phone',
             'provider:id,name,phone',
             'category:id,name',
-            'address',
         ]);
 
         if ($status) {
-            $query->where('status', $status);
+            $requests->where('status', $status);
         }
 
         if ($urgency) {
-            $query->where('urgency', $urgency);
+            $requests->where('urgency', $urgency);
         }
 
-        return $query->orderByDesc('created_at')->paginate(15);
+        $requests = $requests
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        $requests->getCollection()->transform(function ($request) {
+            $request->address = $request->address_id
+                ? $this->locationClient->getAddress($request->address_id)
+                : null;
+
+            return $request;
+        });
+
+        return $requests;
     }
 
     public function getRequestDetailsForAdmin(int $requestId): object
     {
-        return ServiceRequest::with(['user', 'provider', 'category', 'address'])->findOrFail($requestId);
+        $request = ServiceRequest::with([
+            'user',
+            'provider',
+            'category',
+        ])->findOrFail($requestId);
+
+        // جلب العنوان من Location Service
+        $request->address = $request->address_id
+            ? $this->locationClient->getAddress($request->address_id)
+            : null;
+
+        return $request;
     }
 
     public function reassignProvider(int $requestId, int $providerId): object
@@ -154,7 +204,18 @@ class ServiceRequestService implements ServiceRequestServiceInterface
         Provider::query()->findOrFail($providerId);
 
         if ((int) $request->provider_id === $providerId) {
-            return $request->load(['user', 'provider', 'category', 'address']);
+            $request->load([
+                'user',
+                'provider',
+                'category',
+            ]);
+
+            // جلب العنوان من Location Service
+            $request->address = $request->address_id
+                ? $this->locationClient->getAddress($request->address_id)
+                : null;
+
+            return $request;
         }
 
         if ($request->isFinalStatus()) {
@@ -163,10 +224,19 @@ class ServiceRequestService implements ServiceRequestServiceInterface
             ]);
         }
 
-        $oldProviderId = $request->provider_id ? (int) $request->provider_id : null;
+        $oldProviderId = $request->provider_id
+            ? (int) $request->provider_id
+            : null;
 
-        $request = DB::transaction(function () use ($request, $providerId, $oldProviderId) {
-            $request->update(['provider_id' => $providerId]);
+        $request = DB::transaction(function () use (
+            $request,
+            $providerId,
+            $oldProviderId
+        ) {
+            $request->update([
+                'provider_id' => $providerId
+            ]);
+
             $request = $request->fresh();
 
             $this->conversationService->handleProviderReassignment(
@@ -210,7 +280,18 @@ class ServiceRequestService implements ServiceRequestServiceInterface
             }, 'request_unassigned', $request->id);
         }
 
-        return $request->load(['user', 'provider', 'category', 'address']);
+        $request->load([
+            'user',
+            'provider',
+            'category',
+        ]);
+
+        // جلب العنوان من Location Service
+        $request->address = $request->address_id
+            ? $this->locationClient->getAddress($request->address_id)
+            : null;
+
+        return $request;
     }
 
     private function notifySafely(callable $callback, string $type, int $requestId): void
@@ -227,4 +308,5 @@ class ServiceRequestService implements ServiceRequestServiceInterface
             ]);
         }
     }
+    
 }

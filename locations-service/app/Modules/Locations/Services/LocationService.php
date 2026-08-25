@@ -96,4 +96,9 @@ class LocationService implements LocationServiceInterface
             ->pluck('addressable_id')
             ->toArray();
     }
+
+    public function getAddressById(int $addressId): object
+    {
+        return Address::findOrFail($addressId);
+    }
 }

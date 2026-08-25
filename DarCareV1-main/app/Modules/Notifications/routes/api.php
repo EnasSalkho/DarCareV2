@@ -2,6 +2,7 @@
 
 use App\Modules\Notifications\Http\Controllers\Admin\AdminNotificationController;
 use App\Modules\Notifications\Http\Controllers\NotificationController;
+use App\Modules\Notifications\Http\Controllers\DeviceTokenController;
 use Illuminate\Support\Facades\Route;
 
 // روابط جلب الإشعارات الخاصة بالمستخدم (تحتاج توكن)
@@ -18,6 +19,12 @@ Route::middleware('auth:sanctum')->prefix('notifications')->name('notifications.
 
     // هذا الرابط لحذف إشعار واحد
     Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('destroy');
+
+    Route::post('device-tokens', [DeviceTokenController::class, 'store'])
+            ->name('device-tokens.store');
+
+        Route::delete('device-tokens', [DeviceTokenController::class, 'destroy'])
+            ->name('device-tokens.destroy');
 
 });
 

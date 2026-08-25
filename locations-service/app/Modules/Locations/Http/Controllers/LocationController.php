@@ -21,6 +21,16 @@ class LocationController extends Controller
     {
         return strtolower($type);
     }
+
+    public function show(int $addressId): JsonResponse
+    {
+        $address = $this->locationService->getAddressById($addressId);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => new AddressResource($address)
+        ]);
+    }
     
     public function nearbyOwners(\Illuminate\Http\Request $request): JsonResponse
     {

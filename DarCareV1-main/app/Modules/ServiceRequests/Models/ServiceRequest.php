@@ -8,7 +8,7 @@ use App\Modules\Chat\Models\Conversation;
 use App\Modules\Users\Models\User;
 use App\Modules\Providers\Models\Provider;
 use App\Modules\Categories\Models\Category;
-use App\Modules\Locations\Models\Address;
+//use App\Modules\Locations\Models\Address;
 use App\Modules\Ratings\Models\Rating;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,10 +42,10 @@ class ServiceRequest extends Model
         return $this->belongsTo(Category::class, 'category_id');
     }
 
-    public function address(): BelongsTo
-    {
-        return $this->belongsTo(Address::class, 'address_id');
-    }
+    // public function address(): BelongsTo
+    // {
+    //     return $this->belongsTo(Address::class, 'address_id');
+    // }
 
     public function rating(): HasOne
     {

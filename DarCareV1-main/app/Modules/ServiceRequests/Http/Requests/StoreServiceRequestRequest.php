@@ -14,7 +14,8 @@ class StoreServiceRequestRequest extends FormRequest
         return [
             'provider_id'   => ['required', 'integer', 'exists:providers,id'],
             'category_id'   => ['required', 'integer', 'exists:categories,id'],
-            'address_id'    => ['nullable', 'integer', 'exists:addresses,id'],
+            //'address_id'    => ['nullable', 'integer', 'exists:addresses,id'],
+            'address_id' => ['nullable', 'integer'],
             'description'   => ['required', 'string', 'max:2000'],
             'urgency'       => ['nullable', 'in:urgent,normal'],
             'image'         => ['nullable', 'image', 'max:4096'],
