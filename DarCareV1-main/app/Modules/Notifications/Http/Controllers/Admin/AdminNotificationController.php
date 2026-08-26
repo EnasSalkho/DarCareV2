@@ -7,6 +7,7 @@ use App\Modules\Notifications\Contracts\NotificationServiceInterface;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AdminNotificationController extends Controller
 {
@@ -18,9 +19,17 @@ class AdminNotificationController extends Controller
 
     public function send(Request $request): JsonResponse
     {
+        $recipientType = $request->string('recipient_type')->toString() ?: 'user';
+
         $request->validate([
-            'target' => 'required|in:all,users,providers ,specific',
-            'user_id' => 'required_if:target,specific|exists:users,id',
+            'target' => 'required|in:all,users,providers,specific',
+            'recipient_type' => 'nullable|in:user,provider',
+            'user_id' => [
+                'required_if:target,specific',
+                'integer',
+                // مقدّم الخدمة موجود بجدول providers مو بجدول users
+                Rule::exists($recipientType === 'provider' ? 'providers' : 'users', 'id'),
+            ],
             'title' => 'required|string|max:150',
             'message' => 'required|string',
         ]);
@@ -29,11 +38,13 @@ class AdminNotificationController extends Controller
             $request->string('target')->toString(),
             $request->string('title')->toString(),
             $request->string('message')->toString(),
-            $request->integer('user_id') ?: null
+            $request->integer('user_id') ?: null,
+            $recipientType
         );
 
         if (! ($result['success'] ?? false)) {
-            $status = str_contains((string) ($result['message'] ?? ''), 'Too many recipients')
+            $message = (string) ($result['message'] ?? '');
+            $status = (str_contains($message, 'Too many recipients') || str_contains($message, 'No recipients'))
                 ? 422
                 : 503;
 
@@ -53,9 +64,27 @@ class AdminNotificationController extends Controller
     }
 
     public function getUsersList(): JsonResponse
-{
-    $users = \App\Modules\Users\Models\User::select('id', 'name')->get();
+    {
+        $users = \App\Modules\Users\Models\User::query()
+            ->where('role', '!=', 'admin')
+            ->get(['id', 'name'])
+            ->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'recipient_type' => 'user',
+            ]);
 
-    return $this->success($users, 'Users list retrieved successfully');
-}
+        $providers = \App\Modules\Providers\Models\Provider::query()
+            ->get(['id', 'name'])
+            ->map(fn ($provider) => [
+                'id' => $provider->id,
+                'name' => $provider->name,
+                'recipient_type' => 'provider',
+            ]);
+
+        return $this->success(
+            $users->concat($providers)->values(),
+            'Users list retrieved successfully'
+        );
+    }
 }
