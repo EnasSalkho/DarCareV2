@@ -203,9 +203,11 @@ class ConversationService implements ConversationServiceInterface
     public function listForActor(object $actor, array $filters = []): CursorPaginator
     {
         $query = Conversation::query()
-            ->with(['lastMessage', 'participants', 'serviceRequest'])
-            ->orderByDesc('last_message_at')
-            ->orderByDesc('id');
+            // التعديل هنا: إضافة .participant
+        ->with(['lastMessage', 'participants.participant', 'serviceRequest']) 
+        ->orderByDesc('last_message_at')
+        ->orderByDesc('id');
+    // ... باقي الكود
 
         if ($actor instanceof User && $actor->isAdmin()) {
             $query->whereIn('type', [
@@ -248,9 +250,10 @@ class ConversationService implements ConversationServiceInterface
     public function findForActor(int $id, object $actor): Conversation
     {
         $conversation = Conversation::query()
-            ->with(['lastMessage', 'participants', 'serviceRequest'])
-            ->findOrFail($id);
-
+            // التعديل هنا أيضاً
+        ->with(['lastMessage', 'participants.participant', 'serviceRequest'])
+        ->findOrFail($id);
+    // ... باقي الكود
         Gate::forUser($actor)->authorize('view', $conversation);
 
         $conversation->setAttribute(
@@ -283,4 +286,62 @@ class ConversationService implements ConversationServiceInterface
             ->whereNull('left_at')
             ->update(['left_at' => now()]);
     }
+
+    public function openDirectConversation(object $actor, int $receiverId): Conversation
+{
+    // تحديد مودل المستقبل تلقائياً بناءً على نوع الراسل (عميل أو مقدم خدمة)
+    $receiverModel = ($actor instanceof \App\Modules\Users\Models\User) 
+        ? \App\Modules\Providers\Models\Provider::findOrFail($receiverId) 
+        : \App\Modules\Users\Models\User::findOrFail($receiverId);
+
+    $actorType = \App\Modules\Chat\Support\ActorHelper::morphType($actor);
+    $actorId = \App\Modules\Chat\Support\ActorHelper::morphId($actor);
+    
+    $receiverType = \App\Modules\Chat\Support\ActorHelper::morphType($receiverModel);
+    $receiverIdVal = \App\Modules\Chat\Support\ActorHelper::morphId($receiverModel);
+
+    // البحث عن محادثة مباشرة سابقة بين الطرفين لمنع تكرار فتح نفس الشات
+    $conversation = Conversation::query()
+        ->where('type', 'direct')
+        ->whereHas('participants', function ($query) use ($actorType, $actorId) {
+            $query->where('participant_type', $actorType)
+                  ->where('participant_id', $actorId)
+                  ->whereNull('left_at');
+        })
+        ->whereHas('participants', function ($query) use ($receiverType, $receiverIdVal) {
+            $query->where('participant_type', $receiverType)
+                  ->where('participant_id', $receiverIdVal)
+                  ->whereNull('left_at');
+        })
+        ->first();
+
+    // إذا لم تكن موجودة، يتم إنشاؤها عبر معاملة قاعدة بيانات (Transaction)
+    if (!$conversation) {
+    $conversation = \Illuminate\Support\Facades\DB::transaction(function () use ($actorType, $actorId, $receiverType, $receiverIdVal) {
+        $conv = Conversation::create([
+            'type' => \App\Enums\ConversationTypeEnum::Direct, // التعديل هنا
+            'status' => \App\Enums\ConversationStatusEnum::Active, // التعديل هنا
+        ]);
+        // ... باقي الكود الخاص بإضافة الـ participants
+
+            // ربط الراسل كمشارك
+            $conv->participants()->create([
+                'participant_type' => $actorType,
+                'participant_id' => $actorId,
+            ]);
+
+            // ربط المستقبل كمشارك
+            $conv->participants()->create([
+                'participant_type' => $receiverType,
+                'participant_id' => $receiverIdVal,
+            ]);
+
+            return $conv;
+        });
+    }
+
+    return $conversation;
+}
+
+
 }

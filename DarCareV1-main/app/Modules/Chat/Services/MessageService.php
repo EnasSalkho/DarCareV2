@@ -27,7 +27,19 @@ class MessageService implements MessageServiceInterface
         ?int $replyTo = null,
         ?string $clientMessageId = null
     ): Message {
-        Gate::forUser($actor)->authorize('sendMessage', $conversation);
+        if (! $conversation->allowsMessaging()) {
+    abort(403, 'هذه المحادثة مغلقة ولا تستقبل رسائل جديدة.');
+}
+
+$isParticipant = $conversation->participants()
+    ->where('participant_type', ActorHelper::morphType($actor))
+    ->where('participant_id', ActorHelper::morphId($actor))
+    ->whereNull('left_at')
+    ->exists();
+
+if (! $isParticipant) {
+    abort(403, 'This action is unauthorized. You are not a participant.');
+}
 
         $body = trim($body);
 

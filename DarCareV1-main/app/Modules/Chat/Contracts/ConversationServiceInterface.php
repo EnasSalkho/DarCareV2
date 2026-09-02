@@ -31,4 +31,6 @@ interface ConversationServiceInterface
     public function listForActor(object $actor, array $filters = []): CursorPaginator;
 
     public function findForActor(int $id, object $actor): Conversation;
+
+    public function openDirectConversation(object $actor, int $receiverId): Conversation;
 }
