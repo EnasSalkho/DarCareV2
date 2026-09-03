@@ -24,6 +24,12 @@ class NotificationResource extends JsonResource
             'service_request_id' => isset($data['service_request_id'])
                 ? (int) $data['service_request_id']
                 : (isset($data['request_id']) ? (int) $data['request_id'] : null),
+            // بيظهر بس بسجل الأدمن (لما تنجلب علاقة المستلم)
+            'recipient' => $this->whenLoaded('notifiable', fn () => $this->notifiable ? [
+                'id' => $this->notifiable->id,
+                'name' => $this->notifiable->name,
+                'type' => $this->notifiable_type,
+            ] : null),
             'read_at' => $this->read_at,
             'is_read' => $this->read_at !== null,
             'created_at' => $this->created_at,

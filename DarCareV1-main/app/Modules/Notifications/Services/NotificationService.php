@@ -5,6 +5,7 @@ namespace App\Modules\Notifications\Services;
 use App\Modules\Notifications\Contracts\NotificationServiceInterface;
 use App\Modules\Providers\Models\Provider;
 use App\Modules\Users\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -29,15 +30,15 @@ class NotificationService implements NotificationServiceInterface
             && $projectId !== '';
     }
 
-    public function storeDatabaseNotification(object $notifiable, string $type, array $data): object
+    public function storeDatabaseNotification(object $notifiable, string $type, array $data, array $extra = []): object
     {
         $payload = array_merge($data, ['type' => $data['type'] ?? $type]);
 
-        return $notifiable->notifications()->create([
+        return $notifiable->notifications()->create(array_merge([
             'id' => (string) Str::uuid(),
             'type' => $type,
             'data' => $payload,
-        ]);
+        ], $extra));
     }
 
     public function sendToUser(int $userId, string $type, array $data): void
@@ -64,8 +65,13 @@ class NotificationService implements NotificationServiceInterface
         $this->sendPushImmediately($provider, $type, $data);
     }
 
-    public function sendBulkNotification(string $target, string $title, string $message ,?int $userId = null): array
-    {
+    public function sendBulkNotification(
+        string $target,
+        string $title,
+        string $message,
+        ?int $recipientId = null,
+        string $recipientType = 'user'
+    ): array {
         if (! $this->hasFirebaseCredentials()) {
             Log::warning('Bulk notification aborted: Firebase credentials are missing.', [
                 'service' => 'firebase',
@@ -77,32 +83,16 @@ class NotificationService implements NotificationServiceInterface
             ];
         }
 
-        $recipients = collect();
-                    // جلب المستهدفين بناءً على الـ target والـ userId
-            $recipients = collect();
-
-            // if ($target === 'specific' && $userId) {
-            //     $recipients = User::where('id', $userId)->select('id', 'name')->get();
-            // } elseif ($target === 'users') {
-            //     $recipients = User::where('role', 'user')->select('id', 'name')->get();
-            // } elseif ($target === 'providers') {
-            //     $recipients = User::where('role', 'provider')->select('id', 'name')->get();
-            // } else { // حالة target === 'all'
-            //     $recipients = User::select('id', 'name')->get();
-            // }
-
-                if ($target === 'specific' && $userId) {
-                    $recipientUser = User::find($userId);
-                    $recipients = $recipientUser ? collect([$recipientUser]) : collect();
-                } elseif ($target === 'users') {
-                    $recipients = User::where('role', 'user')->get();
-                } elseif ($target === 'providers') {
-                    $recipients = User::where('role', 'provider')->get();
-                } else { // حالة target === 'all'
-                    $recipients = User::all();
-                }
-        // "all" targets customers + providers only (not admins).
+        $recipients = $this->resolveBulkRecipients($target, $recipientId, $recipientType);
         $recipientCount = $recipients->count();
+
+        if ($recipientCount === 0) {
+            return [
+                'success' => false,
+                'message' => 'No recipients matched the selected target.',
+                'recipients' => 0,
+            ];
+        }
 
         if ($recipientCount > self::BULK_RECIPIENT_LIMIT) {
             return [
@@ -112,7 +102,15 @@ class NotificationService implements NotificationServiceInterface
                 'recipients' => $recipientCount,
             ];
         }
+
         $type = ($target === 'specific') ? 'admin_direct' : 'admin_bulk';
+
+        // كل مستلم بياخد سطر (مشان يقدر يقرأ/يحذف إشعاره)، بس كلهم تحت batch واحد
+        // مشان الأدمن يشوف الرسالة مرة وحدة بالسجل.
+        $batch = [
+            'batch_id' => (string) Str::uuid(),
+            'audience' => $target,
+        ];
 
         $data = [
             'title' => $title,
@@ -127,39 +125,61 @@ class NotificationService implements NotificationServiceInterface
         $failed = 0;
         $invalidated = 0;
 
-        // foreach ($recipients as $recipient) {
-        //     $this->storeDatabaseNotification($recipient, 'admin_bulk', $data);
-        //     $databaseStored++;
-
-        //     $push = $this->sendPushImmediately($recipient, 'admin_bulk', $data);
-        //     $devicesAttempted += $push['attempted'];
-        //     $sent += $push['sent'];
-        //     $failed += $push['failed'];
-        //     $invalidated += $push['invalidated'];
-        // }
-
         foreach ($recipients as $recipient) {
-        //  تمرير المتغير $type بدلاً من النص الثابت 'admin_bulk'
-        $this->storeDatabaseNotification($recipient, $type, $data);
-        $databaseStored++;
+            $this->storeDatabaseNotification($recipient, $type, $data, $batch);
+            $databaseStored++;
 
-        $push = $this->sendPushImmediately($recipient, $type, $data);
-        $devicesAttempted += $push['attempted'];
-        $sent += $push['sent'];
-        $failed += $push['failed'];
-        $invalidated += $push['invalidated'];
-    }
+            $push = $this->sendPushImmediately($recipient, $type, $data);
+            $devicesAttempted += $push['attempted'];
+            $sent += $push['sent'];
+            $failed += $push['failed'];
+            $invalidated += $push['invalidated'];
+        }
 
         return [
             'success' => true,
             'message' => 'Bulk notification processing completed.',
-            'recipients' => $recipients,
+            'batch_id' => $batch['batch_id'],
+            'recipients' => $recipientCount,
             'database_stored' => $databaseStored,
             'devices_attempted' => $devicesAttempted,
             'sent' => $sent,
             'failed' => $failed,
             'invalidated' => $invalidated,
         ];
+    }
+
+    /**
+     * المستخدمون ومقدمو الخدمة في جدولين مختلفين، فلازم كل هدف ينحل على الموديل الصحيح.
+     *
+     * @return Collection<int, object>
+     */
+    private function resolveBulkRecipients(string $target, ?int $recipientId, string $recipientType): Collection
+    {
+        return match ($target) {
+            'specific' => $this->findSpecificRecipient($recipientId, $recipientType),
+            'users' => collect(User::query()->where('role', 'user')->get()->all()),
+            'providers' => collect(Provider::query()->get()->all()),
+            // "all" targets customers + providers only (not admins).
+            default => collect(User::query()->where('role', '!=', 'admin')->get()->all())
+                ->merge(Provider::query()->get()->all()),
+        };
+    }
+
+    /**
+     * @return Collection<int, object>
+     */
+    private function findSpecificRecipient(?int $recipientId, string $recipientType): Collection
+    {
+        if (! $recipientId) {
+            return collect();
+        }
+
+        $recipient = $recipientType === 'provider'
+            ? Provider::query()->find($recipientId)
+            : User::query()->find($recipientId);
+
+        return $recipient ? collect([$recipient]) : collect();
     }
 
     public function sendFcmToTokens(array $tokens, string $title, string $body, array $data = []): array
