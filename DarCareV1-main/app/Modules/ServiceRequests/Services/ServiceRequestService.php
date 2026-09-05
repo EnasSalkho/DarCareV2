@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use App\Services\LocationClient;
+use App\Modules\ServiceRequests\Events\RequestStatusUpdated;
 use Throwable;
 
 class ServiceRequestService implements ServiceRequestServiceInterface
@@ -116,6 +117,7 @@ class ServiceRequestService implements ServiceRequestServiceInterface
             if ($statusEnum?->isFinal()) {
                 $this->conversationService->setRequestConversationReadOnly($request);
             }
+            broadcast(new RequestStatusUpdated($request));
 
             return $request;
         });
