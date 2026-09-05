@@ -5,6 +5,7 @@ use App\Modules\Notifications\Http\Controllers\NotificationController;
 use App\Modules\Notifications\Http\Controllers\DeviceTokenController;
 use Illuminate\Support\Facades\Route;
 
+
 // روابط جلب الإشعارات الخاصة بالمستخدم (تحتاج توكن)
 Route::middleware('auth:sanctum')->prefix('notifications')->name('notifications.')->group(function () {
 
