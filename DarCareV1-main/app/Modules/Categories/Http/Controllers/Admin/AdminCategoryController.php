@@ -23,7 +23,11 @@ class AdminCategoryController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $request->validate(['name' => 'required|string|max:255']); // عدلي الحقول حسب جدولك
+        $request->validate([
+            // أضفنا unique لضمان عدم تكرار الاسم
+            'name' => 'required|string|max:255|unique:categories,name',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
 
         $category = $this->categoryService->createCategory($request->all());
         return response()->json([
@@ -35,13 +39,19 @@ class AdminCategoryController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
+        $request->validate([
+            // أضفنا unique مع استثناء الـ ID الحالي عشان نقدر نعدل نفس القسم
+            'name'  => 'sometimes|string|max:255|unique:categories,name,' . $id,
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
         $category = $this->categoryService->updateCategory($id, $request->all());
+        
         if (!$category) {
             return response()->json(['status' => 'error', 'message' => 'التصنيف غير موجود'], 404);
         }
         return response()->json(['status' => 'success', 'message' => 'تم تحديث التصنيف بنجاح'], 200);
     }
-
     public function destroy(int $id): JsonResponse
     {
         if ($this->categoryService->deleteCategory($id)) {

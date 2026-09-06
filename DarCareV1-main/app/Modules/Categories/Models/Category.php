@@ -13,7 +13,7 @@ class Category extends Model
 {
     protected $table = 'categories';
 
-    protected $fillable = ['name', 'slug', 'icon', 'description', 'is_active'];
+    protected $fillable = ['name', 'slug', 'image', 'description', 'is_active'];
 
     // 1. القسم يحتوي على العديد من الفنيين
     public function providers(): BelongsToMany

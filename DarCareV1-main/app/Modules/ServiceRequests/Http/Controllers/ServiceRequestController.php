@@ -52,18 +52,23 @@ class ServiceRequestController extends Controller
 
     // Provider: update request status
     public function updateStatus(UpdateRequestStatusRequest $request, int $id): JsonResponse
-    {
-        $serviceRequest = ServiceRequest::query()->findOrFail($id);
-        $this->authorize('updateStatus', $serviceRequest);
+{
+    $serviceRequest = ServiceRequest::query()->findOrFail($id);
 
-        $serviceRequest = $this->service->updateStatus(
-            $id,
-            $request->user()->id,
-            $request->status,
-            $request->scheduled_at
-        );
-        return $this->success(new ServiceRequestResource($serviceRequest), 'Status updated');
-    }
+    $this->authorize('updateStatus', $serviceRequest);
+
+    $serviceRequest = $this->service->updateStatus(
+        $id,
+        $request->user()->id,
+        $request->status,
+        $request->scheduled_at
+    );
+
+    return $this->success(
+        new ServiceRequestResource($serviceRequest),
+        'Status updated'
+    );
+}   
 
     public function show(Request $request, int $id): JsonResponse
     {

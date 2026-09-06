@@ -9,11 +9,12 @@ class CategoryResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $defaultImage = 'categories/default.png';
         return [
             'id'          => $this->id,
             'name'        => $this->name,
             'slug'        => $this->slug,
-            'icon'        => $this->icon,
+            'image'       => asset('storage/' . ($this->image ?: $defaultImage)),
             'description' => $this->description,
         ];
     }
