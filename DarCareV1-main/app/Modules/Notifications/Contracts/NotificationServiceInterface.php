@@ -13,6 +13,7 @@ interface NotificationServiceInterface
      * @return array{
      *     success: bool,
      *     message: string,
+     *     batch_id?: string,
      *     recipients?: int,
      *     devices_attempted?: int,
      *     sent?: int,
@@ -21,12 +22,18 @@ interface NotificationServiceInterface
      *     database_stored?: int
      * }
      */
-    public function sendBulkNotification(string $target, string $title, string $message): array;
+    public function sendBulkNotification(
+        string $target,
+        string $title,
+        string $message,
+        ?int $recipientId = null,
+        string $recipientType = 'user'
+    ): array;
 
     /**
      * @param  array<string, mixed>  $data
      */
-    public function storeDatabaseNotification(object $notifiable, string $type, array $data): object;
+    public function storeDatabaseNotification(object $notifiable, string $type, array $data, array $extra = []): object;
 
     /**
      * @param  list<string>  $tokens
