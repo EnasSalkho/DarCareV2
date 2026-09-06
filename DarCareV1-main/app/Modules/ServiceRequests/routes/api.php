@@ -12,6 +12,7 @@ Route::middleware('auth:sanctum')->prefix('requests')->name('requests.')->group(
     // Provider
     Route::get('/incoming',         [ServiceRequestController::class, 'providerRequests'])->name('incoming');
     Route::patch('/{id}/status',    [ServiceRequestController::class, 'updateStatus'])->name('updateStatus');
+    
 
     // Shared
     Route::get('/{id}',             [ServiceRequestController::class, 'show'])->name('show');

@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Modules\Notifications\Events\NotificationSent;
 
 class NotificationService implements NotificationServiceInterface
 {
@@ -30,15 +31,21 @@ class NotificationService implements NotificationServiceInterface
             && $projectId !== '';
     }
 
-    public function storeDatabaseNotification(object $notifiable, string $type, array $data, array $extra = []): object
+public function storeDatabaseNotification(object $notifiable, string $type, array $data, array $extra = []): object
     {
         $payload = array_merge($data, ['type' => $data['type'] ?? $type]);
 
-        return $notifiable->notifications()->create(array_merge([
+        // حفظ الإشعار في الداتا بيز مع خيارات extra (مثل batch_id)
+        $notification = $notifiable->notifications()->create(array_merge([
             'id' => (string) Str::uuid(),
             'type' => $type,
             'data' => $payload,
         ], $extra));
+
+        // إطلاق الحدث لإرساله عبر Pusher
+        event(new NotificationSent($notification));
+
+        return $notification;
     }
 
     public function sendToUser(int $userId, string $type, array $data): void

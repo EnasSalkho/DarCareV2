@@ -65,7 +65,11 @@ class Conversation extends Model
 
     public function allowsMessaging(): bool
     {
-        return $this->status === ConversationStatusEnum::Open;
+        // السماح للإرسال إذا كانت المحادثة open أو active
+    return in_array($this->status, [
+        ConversationStatusEnum::Open,
+        ConversationStatusEnum::Active,
+    ], true);
     }
 
     public function isSupport(): bool

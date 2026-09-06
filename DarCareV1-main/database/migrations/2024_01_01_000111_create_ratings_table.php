@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->text('comment')->nullable();
             $table->timestamps();
 
-            $table->unique(['user_id', 'service_request_id']);
+            $table->unique('service_request_id');
             $table->index('provider_id');
         });
     }
