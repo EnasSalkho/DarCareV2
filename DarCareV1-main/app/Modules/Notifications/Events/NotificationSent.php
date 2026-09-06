@@ -8,12 +8,18 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow; // التغيير هون!
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Notifications\DatabaseNotification;
 
 class NotificationSent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public Notification $notification) {}
+    public $notification;
+
+public function __construct(DatabaseNotification $notification)
+{
+    $this->notification = $notification;
+}
 
     public function broadcastOn(): array
     {

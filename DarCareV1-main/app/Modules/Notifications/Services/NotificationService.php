@@ -8,6 +8,7 @@ use App\Modules\Users\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Modules\Notifications\Events\NotificationSent;
 
 class NotificationService implements NotificationServiceInterface
 {
@@ -30,15 +31,21 @@ class NotificationService implements NotificationServiceInterface
     }
 
     public function storeDatabaseNotification(object $notifiable, string $type, array $data): object
-    {
-        $payload = array_merge($data, ['type' => $data['type'] ?? $type]);
+{
+    $payload = array_merge($data, ['type' => $data['type'] ?? $type]);
 
-        return $notifiable->notifications()->create([
-            'id' => (string) Str::uuid(),
-            'type' => $type,
-            'data' => $payload,
-        ]);
-    }
+    // حفظ الإشعار في الداتا بيز
+    $notification = $notifiable->notifications()->create([
+        'id' => (string) Str::uuid(),
+        'type' => $type,
+        'data' => $payload,
+    ]);
+
+    // 🔥 السطر المفقود: إطلاق الحدث لإرساله عبر Pusher
+    event(new NotificationSent($notification));
+
+    return $notification;
+}
 
     public function sendToUser(int $userId, string $type, array $data): void
     {

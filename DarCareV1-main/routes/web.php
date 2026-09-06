@@ -8,6 +8,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::view('/listen', 'test-listen');
+
 Route::get('/test-broadcast', function () {
     abort_unless(app()->environment('local'), 404);
 
