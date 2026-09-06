@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
+use App\Enums\ConversationTypeEnum;
 
 class AdminConversationController extends Controller
 {
@@ -25,56 +26,27 @@ class AdminConversationController extends Controller
         private readonly MessageServiceInterface $messages
     ) {}
 
-    public function index(Request $request): JsonResponse
-    {
-        $query = Conversation::query()
-            ->with(['lastMessage', 'participants.participant', 'serviceRequest'])
-            ->orderByDesc('last_message_at')
-            ->orderByDesc('id');
-
-        if ($request->filled('type')) {
-            $query->where('type', $request->string('type'));
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
-        }
-
-        if ($request->filled('service_request')) {
-            $query->where('service_request_id', $request->integer('service_request'));
-        }
-
-        if ($request->filled('customer')) {
-            $customerId = $request->integer('customer');
-            $query->whereHas('participants', function ($q) use ($customerId) {
-                $q->whereNull('left_at')
-                    ->where('participant_type', 'user')
-                    ->where('participant_id', $customerId);
-            });
-        }
-
-        if ($request->filled('provider')) {
-            $providerId = $request->integer('provider');
-            $query->whereHas('participants', function ($q) use ($providerId) {
-                $q->whereNull('left_at')
-                    ->where('participant_type', 'provider')
-                    ->where('participant_id', $providerId);
-            });
-        }
-
-        if ($request->filled('search')) {
-            $search = '%'.$request->string('search').'%';
-            $query->whereHas('messages', fn ($q) => $q->where('body', 'like', $search));
-        }
-
-        $paginator = $query->cursorPaginate(20);
-
-        return $this->success([
-            'data' => ConversationResource::collection($paginator->items()),
-            'next_cursor' => $paginator->nextCursor()?->encode(),
-            'has_more' => $paginator->hasMorePages(),
-        ]);
-    }
+    public function index(Request $request): JsonResponse { $query = Conversation::query() 
+    ->with(['lastMessage', 'participants.participant', 'serviceRequest']) 
+    ->whereIn('type', [ ConversationTypeEnum::SupportCustomer, ConversationTypeEnum::SupportProvider, ]) 
+    ->orderByDesc('last_message_at') 
+    ->orderByDesc('id'); 
+    if ($request->filled('status')) { 
+        $query->where('status', $request->string('status')); } 
+    if ($request->filled('customer')) { 
+        $customerId = $request->integer('customer'); 
+        $query->whereHas('participants', function ($q) use ($customerId) { $q->whereNull('left_at') 
+        ->where('participant_type', 'user') ->where('participant_id', $customerId); }); } 
+        if ($request->filled('provider')) { $providerId = $request->integer('provider');
+         $query->whereHas('participants', function ($q) use ($providerId) { $q->whereNull('left_at') 
+         ->where('participant_type', 'provider') ->where('participant_id', $providerId); }); } 
+         if ($request->filled('search')) { $search = '%'.$request->string('search').'%'; 
+         $query->whereHas('messages', function ($q) use ($search) { $q->where('body', 'like', $search); }); } 
+         $paginator = $query->cursorPaginate(20); 
+         return $this->success([ 
+            'data' => ConversationResource::collection($paginator->items()), 
+            'next_cursor' => $paginator->nextCursor()?->encode(), 
+            'has_more' => $paginator->hasMorePages(), ]); }
 
     public function show(Conversation $conversation): JsonResponse
     {
@@ -135,12 +107,10 @@ class AdminConversationController extends Controller
 
     private function authorizeAdminAccess(Conversation $conversation): void
     {
-        if ($conversation->isSupport()) {
-            Gate::authorize('view', $conversation);
-
-            return;
+        if (! $conversation->isSupport()) {
+            abort(403, 'Admins can only access support conversations.');
         }
 
-        Gate::authorize('adminInspect', $conversation);
+        Gate::authorize('view', $conversation);
     }
 }
