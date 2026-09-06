@@ -24,7 +24,6 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Gate;
 
 class ConversationController extends Controller
 {
@@ -60,12 +59,14 @@ class ConversationController extends Controller
     public function store(OpenConversationRequest $request): JsonResponse
     {
         $actor = $request->user();
-        $type = ConversationTypeEnum::from($request->validated('type'));
+        
+        $type = $request->validated('type');
 
         $conversation = match ($type) {
-            ConversationTypeEnum::Request => $this->openRequest($actor, (int) $request->validated('service_request_id')),
-            ConversationTypeEnum::SupportCustomer => $this->openCustomerSupport($actor),
-            ConversationTypeEnum::SupportProvider => $this->openProviderSupport($actor),
+            'request' => $this->openRequest($actor, (int) $request->validated('service_request_id')),
+            'support_customer' => $this->openCustomerSupport($actor),
+            'support_provider' => $this->openProviderSupport($actor),
+            'direct' => $this->openDirectChat($actor, (int) $request->validated('receiver_id')), 
         };
 
         $conversation->unread_count = $this->unread->unreadForConversation($conversation, $actor);
@@ -75,17 +76,19 @@ class ConversationController extends Controller
 
     public function show(Request $request, Conversation $conversation): JsonResponse
     {
-        Gate::authorize('view', $conversation);
+        $actor = $request->user();
+        $this->ensureParticipant($conversation, $actor);
 
         $conversation->load(['lastMessage', 'participants.participant', 'serviceRequest']);
-        $conversation->unread_count = $this->unread->unreadForConversation($conversation, $request->user());
+        $conversation->unread_count = $this->unread->unreadForConversation($conversation, $actor);
 
         return $this->success(new ConversationResource($conversation));
     }
 
     public function messages(Request $request, Conversation $conversation): JsonResponse
     {
-        Gate::authorize('view', $conversation);
+        $actor = $request->user();
+        $this->ensureParticipant($conversation, $actor);
 
         $paginator = Message::query()
             ->where('conversation_id', $conversation->id)
@@ -104,6 +107,7 @@ class ConversationController extends Controller
 
     public function send(SendChatMessageRequest $request, Conversation $conversation): JsonResponse
     {
+        // التحقق من الصلاحيات يتم الآن داخل الـ MessageService الذي قمنا بتعديله في الخطوة السابقة
         $message = $this->messages->send(
             $conversation,
             $request->user(),
@@ -130,15 +134,18 @@ class ConversationController extends Controller
 
     public function mute(MuteConversationRequest $request, Conversation $conversation): JsonResponse
     {
-        Gate::authorize('mute', $conversation);
-
         $actor = $request->user();
+
         $participant = ConversationParticipant::query()
             ->where('conversation_id', $conversation->id)
             ->whereNull('left_at')
             ->where('participant_type', ActorHelper::morphType($actor))
             ->where('participant_id', ActorHelper::morphId($actor))
-            ->firstOrFail();
+            ->first();
+
+        if (! $participant) {
+            abort(403, 'Unauthorized. You are not a participant.');
+        }
 
         $participant->update([
             'muted_at' => $request->boolean('muted') ? now() : null,
@@ -180,5 +187,26 @@ class ConversationController extends Controller
         }
 
         return $this->conversations->openProviderSupport($actor);
+    }
+
+    private function openDirectChat(object $actor, int $receiverId): Conversation
+    {
+        return $this->conversations->openDirectConversation($actor, $receiverId);
+    }
+
+    /**
+     * دالة مساعدة للتحقق من أن المستخدم مشارك في المحادثة بدلاً من Gate
+     */
+    private function ensureParticipant(Conversation $conversation, object $actor): void
+    {
+        $isParticipant = $conversation->participants()
+            ->where('participant_type', ActorHelper::morphType($actor))
+            ->where('participant_id', ActorHelper::morphId($actor))
+            ->whereNull('left_at')
+            ->exists();
+
+        if (! $isParticipant) {
+            abort(403, 'This action is unauthorized. You are not a participant.');
+        }
     }
 }

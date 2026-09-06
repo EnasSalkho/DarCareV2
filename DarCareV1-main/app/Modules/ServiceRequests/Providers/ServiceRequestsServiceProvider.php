@@ -12,6 +12,11 @@ use Illuminate\Support\ServiceProvider;
 
 class ServiceRequestsServiceProvider extends ServiceProvider
 {
+    protected $policies = [
+        // ربط الموديل بالبوليسي
+        ServiceRequest::class => ServiceRequestPolicy::class,
+    ];
+
     public function register(): void
     {
         $this->app->bind(ServiceRequestServiceInterface::class, ServiceRequestService::class);

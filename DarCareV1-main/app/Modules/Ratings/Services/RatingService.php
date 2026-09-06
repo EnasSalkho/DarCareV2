@@ -14,16 +14,16 @@ class RatingService implements RatingServiceInterface
     {
         return DB::transaction(function () use ($userId, $data) {
             $rating = Rating::updateOrCreate(
-                ['user_id' => $userId, 'service_request_id' => $data['service_request_id']],
+                ['service_request_id' => $data['service_request_id']], 
                 [
+                    'user_id'     => $userId,
                     'provider_id' => $data['provider_id'],
                     'rating'      => $data['rating'],
                     'comment'     => $data['comment'] ?? null,
                 ]
             );
 
-            // Recalculate provider average — cross-module via model directly on providers table
-            // Acceptable: only updating a column, not importing business logic
+            // حساب المتوسط
             $avg = Rating::where('provider_id', $data['provider_id'])->avg('rating');
             Provider::where('id', $data['provider_id'])->update(['rating_avg' => round($avg, 2)]);
 

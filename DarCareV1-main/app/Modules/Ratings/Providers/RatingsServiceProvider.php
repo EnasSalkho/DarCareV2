@@ -11,11 +11,9 @@ class RatingsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(RatingServiceInterface::class, RatingService::class ,
-
-         App\Modules\Ratings\Services\RatingService::class
-        );
-
+        $this->app->bind(RatingServiceInterface::class, RatingService::class);
     }
+
+    
     public function boot(): void {}
 }
