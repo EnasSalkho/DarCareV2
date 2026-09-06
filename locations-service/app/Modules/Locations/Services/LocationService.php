@@ -6,9 +6,7 @@ namespace App\Modules\Locations\Services;
 use App\Modules\Locations\Contracts\LocationServiceInterface;
 use App\Modules\Locations\Models\Address;
 use Illuminate\Support\Facades\DB;
-use App\Modules\Locations\Services\LocationService;
 use Illuminate\Validation\ValidationException;
-
 
 class LocationService implements LocationServiceInterface
 {
@@ -78,24 +76,45 @@ class LocationService implements LocationServiceInterface
         return Address::latest()->paginate(15);
     }
 
-    public function getNearbyOwners(float $latitude,float $longitude,float $radius,string $ownerType): array {
-        $ownerType = strtolower($ownerType);
+    public function getNearbyOwners(
+    float $latitude,
+    float $longitude,
+    float $radius,
+    string $type
+): array {
+    $locations = Address::query()
+        ->where('addressable_type', $type)
+        ->select([
+            'addressable_id as owner_id',
+            'latitude',
+            'longitude',
+        ])
+        ->selectRaw(
+            '(
+                6371 * acos(
+                    cos(radians(?))
+                    * cos(radians(latitude))
+                    * cos(radians(longitude) - radians(?))
+                    + sin(radians(?))
+                    * sin(radians(latitude))
+                )
+            ) AS distance',
+            [$latitude, $longitude, $latitude]
+        )
+        ->having('distance', '<=', $radius)
+        ->orderBy('distance')
+        ->get();
 
-        $haversine = "(6371 * acos(
-            cos(radians($latitude))
-            * cos(radians(latitude))
-            * cos(radians(longitude) - radians($longitude))
-            + sin(radians($latitude))
-            * sin(radians(latitude))
-        ))";
+    // اختيار أقرب عنوان لكل Provider
+    $nearestLocations = $locations
+        ->groupBy('owner_id')
+        ->map(function ($ownerLocations) {
+            return $ownerLocations->first();
+        })
+        ->values();
 
-        return Address::select('addressable_id')
-            ->where('addressable_type', $ownerType)
-            ->selectRaw("{$haversine} AS distance")
-            ->having('distance', '<=', $radius)
-            ->pluck('addressable_id')
-            ->toArray();
-    }
+    return $nearestLocations->toArray();
+}
 
     public function getAddressById(int $addressId): object
     {

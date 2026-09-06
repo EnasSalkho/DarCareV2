@@ -18,7 +18,12 @@ class RegisterProviderRequest extends FormRequest
             'password'              => ['required', 'string', 'min:8', 'confirmed'],
             'years_of_experience'   => ['required', 'integer', 'min:0'],
             'bio'                   => ['nullable', 'string', 'max:1000'],
-            'profile_image'         => ['required', 'image', 'max:2048'],
+            'profile_image' => ['required', 'image', 'max:2048'],
+            'identity_image' => [
+                'required',
+                'image',
+                'max:5120',
+            ],
             'category_ids'          => ['required', 'array'],
             'category_ids.*'        => ['integer', 'exists:categories,id'],
             'address.latitude'      => ['required', 'numeric', 'between:-90,90'],

@@ -8,23 +8,15 @@ use App\Modules\Providers\Models\Provider;
 use Illuminate\Support\Facades\DB;
 use App\Enums\ProviderStatusEnum;
 use App\Services\LocationClient;
-// use App\Modules\Locations\Services\LocationService; // 1. استدعاء خدمة المواقع
 
 class ProviderService implements ProviderServiceInterface
 {
-    //protected LocationService $locationService;
-
-    // 2. حقن LocationService عن طريق الـ Constructor
-    // public function __construct(LocationService $locationService)
-    // {
-    //     $this->locationService = $locationService;
-    // }
     protected LocationClient $locationClient;
 
     public function __construct(LocationClient $locationClient)
     {
         $this->locationClient = $locationClient;
-    }
+    }   
 
     public function getProfile(int $providerId): object
     {
@@ -71,55 +63,74 @@ class ProviderService implements ProviderServiceInterface
             ->paginate(15);
     }
 
-    public function getNearbyProviders(float $latitude, float $longitude, float $radius): mixed
+    // ✅ تم التعديل هنا للتعامل مع LocationService والفلترة حسب الفئة
+    public function getNearbyProviders(float $latitude, float $longitude, float $radius, ?int $categoryId = null): mixed
     {
-        $providerIds = $this->locationClient->getNearbyOwners(
-            $latitude,
-            $longitude,
-            $radius,
-            'provider'
-        );
+        // 1. إرسال طلب HTTP (مرة واحدة فقط) للمايكروسيرفس الخاص بالمواقع
+        // يفترض أن يرجع هذا الطلب مصفوفة تحتوي على (owner_id, latitude, longitude)
+        $nearbyData = $this->locationClient->getNearbyOwners($latitude, $longitude, $radius, 'provider');
 
-        if (empty($providerIds)) {
-            return [];
+        // إذا كان الرد فارغاً أو فشل الاتصال
+        if (empty($nearbyData) || !is_array($nearbyData)) {
+            return collect([]);
         }
 
-        $providers = Provider::whereIn('id', $providerIds)->get();
+        // تحويل البيانات إلى Collection لتسهيل التعامل معها
+        $locationsCollection = collect($nearbyData);
+        
+        // استخراج أرقام المزودين (IDs) فقط لعمل الاستعلام
+        $providerIds = $locationsCollection->pluck('owner_id')->toArray();
 
-        return $providers->map(function ($provider) {
+        // 2. الاستعلام من قاعدة البيانات المحلية لمزودي الخدمات
+        $query = Provider::with('categories')->whereIn('id', $providerIds);
 
-            $location = $this->locationClient->getProviderLocation($provider->id);
+        if ($categoryId) {
+            $query->whereHas('categories', function ($q) use ($categoryId) {
+                $q->where('categories.id', $categoryId);
+            });
+        }
 
-            $provider->latitude = $location['latitude'] ?? null;
-            $provider->longitude = $location['longitude'] ?? null;
+        $providers = $query->get();
+
+        // 3. دمج الإحداثيات (بدون أي طلب HTTP داخل اللوب!)
+        return $providers->map(function ($provider) use ($locationsCollection) {
+            // البحث عن إحداثيات المزود من البيانات التي جلبناها مسبقاً
+            $locationInfo = $locationsCollection->firstWhere('owner_id', $provider->id);
+
+            $provider->latitude = $locationInfo['latitude'] ?? null;
+            $provider->longitude = $locationInfo['longitude'] ?? null;
+            
+            // حساب المسافة (اختياري، إذا كان الـ Location Microservice يرجعها)
+            $provider->distance = $locationInfo['distance'] ?? null; 
 
             return $provider;
         });
     }
 
-        //? Admin
-        public function getAllProvidersForAdmin(?string $status): mixed
-        {
-            $query = Provider::with('categories:id,name');
+    //? Admin
+    public function getAllProvidersForAdmin(?string $status): mixed
+    {
+        $query = Provider::with('categories:id,name');
 
-            if ($status) {
-                $query->where('status', $status);
-            }
-
-            return $query->orderBy('rating_avg', 'desc')->paginate(15);
+        if ($status) {
+            $query->where('status', $status);
         }
 
-        public function updateProviderStatusForAdmin(int $providerId, string $status): object
-        {
-            $provider = Provider::findOrFail($providerId);
+        return $query->orderBy('rating_avg', 'desc')->paginate(15);
+    }
 
-            $provider->update([
-                'status' => $status
-            ]);
+    public function updateProviderStatusForAdmin(int $providerId, string $status): object
+    {
+        $provider = Provider::findOrFail($providerId);
 
-            return $provider->fresh();
-        }
-        public function getProvidersByCategory(int $categoryId): mixed
+        $provider->update([
+            'status' => $status
+        ]);
+
+        return $provider->fresh();
+    }
+
+    public function getProvidersByCategory(int $categoryId): mixed
     {
         return Provider::with('categories')
             ->where('status', 'available')
@@ -128,4 +139,20 @@ class ProviderService implements ProviderServiceInterface
             })
             ->paginate(15);
     }
+    public function updateProviderVerificationStatusForAdmin(
+    int $providerId,
+    string $verificationStatus,
+    ?string $rejectionReason = null
+): object {
+    $provider = Provider::findOrFail($providerId);
+
+    $provider->update([
+        'verification_status' => $verificationStatus,
+        'rejection_reason' => $verificationStatus === 'rejected'
+            ? $rejectionReason
+            : null,
+    ]);
+
+    return $provider->fresh();
+}
 }

@@ -2,6 +2,9 @@
 // routes/api.php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
+
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 Route::prefix('v1')->group(function () {
     require base_path('app/Modules/Auth/routes/api.php');
