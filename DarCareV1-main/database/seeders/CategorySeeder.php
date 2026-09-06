@@ -11,22 +11,23 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
+        // أزلنا حقل icon لأننا لم نعد بحاجة إليه
         $categories = [
-            ['name' => 'Plumbing',       'icon' => '🔧'],
-            ['name' => 'Carpentry',      'icon' => '🪚'],
-            ['name' => 'Electrical',     'icon' => '⚡'],
-            ['name' => 'Painting',       'icon' => '🎨'],
-            ['name' => 'HVAC',           'icon' => '❄️'],
-            ['name' => 'Cleaning',       'icon' => '🧹'],
-            ['name' => 'Landscaping',    'icon' => '🌿'],
-            ['name' => 'Roofing',        'icon' => '🏠'],
+            ['name' => 'Plumbing'],
+            ['name' => 'Carpentry'],
+            ['name' => 'Electrical'],
+            ['name' => 'Painting'],
+            ['name' => 'HVAC'],
+            ['name' => 'Cleaning'],
+            ['name' => 'Landscaping'],
+            ['name' => 'Roofing'],
         ];
 
         foreach ($categories as $cat) {
             DB::table('categories')->insertOrIgnore([
                 'name'       => $cat['name'],
                 'slug'       => Str::slug($cat['name']),
-                'icon'       => $cat['icon'],
+                'image'      => 'categories/default.png', // تعيين مسار الصورة الافتراضية هنا
                 'is_active'  => true,
                 'created_at' => now(),
                 'updated_at' => now(),
