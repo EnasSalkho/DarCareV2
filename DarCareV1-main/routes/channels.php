@@ -28,12 +28,14 @@ Broadcast::channel('conversation.{conversationId}', function ($user, int $conver
     return false;
 });
 
-Broadcast::channel('user.user.{userId}', function ($user, int $userId) {
-    return $user instanceof User && (int) $user->id === (int) $userId;
+// القناة الخاصة بالعميل العادي (Client)
+Broadcast::channel('client.{id}', function ($user, int $id) {
+    return $user instanceof User && (int) $user->id === (int) $id;
 });
 
-Broadcast::channel('user.provider.{providerId}', function ($user, int $providerId) {
-    return $user instanceof Provider && (int) $user->id === (int) $providerId;
+// القناة الخاصة بمزود الخدمة (Provider)
+Broadcast::channel('user.{id}', function ($user, int $id) {
+    return $user instanceof Provider && (int) $user->id === (int) $id;
 });
 
 Broadcast::channel('service-request.{id}', function ($user, $id) {
@@ -43,6 +45,5 @@ Broadcast::channel('service-request.{id}', function ($user, $id) {
         return false;
     }
 
-    // السماح فقط للمستخدم صاحب الطلب أو مزود الخدمة بالاستماع لهذه القناة
     return $user->id === $serviceRequest->user_id || $user->id === $serviceRequest->provider_id;
 });
