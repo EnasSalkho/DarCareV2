@@ -44,8 +44,7 @@ class ProviderService implements ProviderServiceInterface
 
     public function searchProviders(array $filters): mixed
     {
-        $query = Provider::with('categories')
-            ->where('status', 'available');
+        $query = Provider::with('categories')->visibleToClients();
 
         if (!empty($filters['name'])) {
             $query->where('name', 'like', "%{$filters['name']}%");
@@ -63,7 +62,7 @@ class ProviderService implements ProviderServiceInterface
     public function all()
     {
         return Provider::with('categories')
-            ->where('status', 'available')
+            ->visibleToClients()
             ->paginate(15);
     }
 
@@ -86,7 +85,9 @@ class ProviderService implements ProviderServiceInterface
         $providerIds = $locationsCollection->pluck('owner_id')->toArray();
 
         // 2. الاستعلام من قاعدة البيانات المحلية لمزودي الخدمات
-        $query = Provider::with('categories')->whereIn('id', $providerIds);
+        $query = Provider::with('categories')
+            ->visibleToClients()
+            ->whereIn('id', $providerIds);
 
         if ($categoryId) {
             $query->whereHas('categories', function ($q) use ($categoryId) {
@@ -134,10 +135,25 @@ class ProviderService implements ProviderServiceInterface
         return $provider->fresh();
     }
 
+    /**
+     * Soft-deletes the provider so past service requests and ratings keep
+     * resolving, and revokes their tokens so an open session cannot keep
+     * using the API after removal.
+     */
+    public function deleteProviderForAdmin(int $providerId): void
+    {
+        $provider = Provider::findOrFail($providerId);
+
+        DB::transaction(function () use ($provider) {
+            $provider->tokens()->delete();
+            $provider->delete();
+        });
+    }
+
     public function getProvidersByCategory(int $categoryId): mixed
     {
         return Provider::with('categories')
-            ->where('status', 'available')
+            ->visibleToClients()
             ->whereHas('categories', function ($query) use ($categoryId) {
                 $query->where('categories.id', $categoryId);
             })

@@ -40,6 +40,20 @@ return Application::configure(basePath: dirname(__DIR__))
             return $request->is('api/*') || $request->expectsJson();
         });
 
+        $exceptions->render(function (\App\Exceptions\ProviderNotVerifiedException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'data' => null,
+                    'errors' => [
+                        'verification_status' => $e->verificationStatus,
+                        'rejection_reason' => $e->rejectionReason,
+                    ],
+                ], 400);
+            }
+        });
+
         $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([

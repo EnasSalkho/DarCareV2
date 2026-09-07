@@ -3,6 +3,7 @@
 
 namespace App\Modules\Auth\Services;
 
+use App\Exceptions\ProviderNotVerifiedException;
 use App\Modules\Auth\Contracts\AuthServiceInterface;
 use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Http\Requests\RegisterProviderRequest;
@@ -115,6 +116,22 @@ $identityImagePath = $request->file('identity_image')
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
+        }
+
+        // A provider whose account is still pending (or was rejected) must not
+        // receive a token. Checked after the password so the response never
+        // reveals whether an email exists.
+        if ($role === 'provider') {
+            $verificationStatus = $model->verification_status instanceof \BackedEnum
+                ? $model->verification_status->value
+                : (string) $model->verification_status;
+
+            if ($verificationStatus !== 'approved') {
+                throw new ProviderNotVerifiedException(
+                    $verificationStatus,
+                    $model->rejection_reason
+                );
+            }
         }
 
         // جلب الـ address من Location Service

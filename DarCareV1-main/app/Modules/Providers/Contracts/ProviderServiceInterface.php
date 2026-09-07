@@ -16,6 +16,7 @@ interface ProviderServiceInterface
         //? Admin
     public function getAllProvidersForAdmin(?string $status): mixed;
     public function updateProviderStatusForAdmin(int $providerId, string $status): object;
+    public function deleteProviderForAdmin(int $providerId): void;
     public function getProvidersByCategory(int $categoryId): mixed;
     
     public function updateProviderVerificationStatusForAdmin(

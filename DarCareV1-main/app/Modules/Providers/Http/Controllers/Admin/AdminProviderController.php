@@ -48,6 +48,17 @@ class AdminProviderController extends Controller
         ], 200);
     }
 
+    public function destroy(int $id): JsonResponse
+    {
+        $this->providerService->deleteProviderForAdmin($id);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم حذف الحرفي بنجاح',
+            'data' => null,
+        ], 200);
+    }
+
     public function updateVerificationStatus(
     Request $request,
     int $id

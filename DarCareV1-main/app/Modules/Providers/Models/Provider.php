@@ -57,6 +57,18 @@ class Provider extends Authenticatable
         return 'provider';
     }
 
+    /**
+     * Providers a client is allowed to see: available for work AND approved by
+     * an admin. Pending and rejected accounts must never surface in listings,
+     * search or nearby results.
+     */
+    public function scopeVisibleToClients($query)
+    {
+        return $query
+            ->where('status', 'available')
+            ->where('verification_status', 'approved');
+    }
+
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'category_provider', 'provider_id', 'category_id');
