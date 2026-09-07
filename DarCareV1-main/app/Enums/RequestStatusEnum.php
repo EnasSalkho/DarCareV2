@@ -23,6 +23,23 @@ enum RequestStatusEnum: string
         ], true);
     }
 
+    /**
+     * الطلبات التي يكون مزود الخدمة قد التزم بها فعلاً وما زالت قيد التنفيذ.
+     *
+     * تستثني pending لأن الطلب المعلّق لم يُقبل بعد — يستطيع المزود رفضه، ولا
+     * معنى لعبارة "أنهِ طلبك" بالنسبة له. وهذه نفس المجموعة التي يعتبرها
+     * التطبيق طلباً نشطاً في OrderPresentationUtils.isActiveRequest.
+     */
+    public static function activeValues(): array
+    {
+        return [
+            self::Accepted->value,
+            self::ON_THE_WAY->value,
+            self::IN_PROGRESS->value,
+            self::Delayed->value,
+        ];
+    }
+
     public static function finalValues(): array
     {
         return [

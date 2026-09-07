@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Enums\ProviderStatusEnum;
+use App\Enums\RequestStatusEnum;
 use App\Mail\ProviderApprovedMail;
 use App\Mail\ProviderRejectedMail;
 use App\Services\LocationClient;
+use Illuminate\Validation\ValidationException;
 
 class ProviderService implements ProviderServiceInterface
 {
@@ -38,8 +40,43 @@ class ProviderService implements ProviderServiceInterface
     {
         $provider = Provider::findOrFail($providerId);
         $newStatus = $provider->status === 'available' ? 'busy' : 'available';
+
+        // لا يستطيع مزود الخدمة إيقاف استقباله للطلبات وعنده طلب التزم به فعلاً
+        // ولم يُنهه بعد: العميل ينتظره، والمحادثة والطلب ما زالا مفتوحين.
+        // العودة إلى available مسموحة دائماً.
+        if ($newStatus === 'busy') {
+            $this->guardAgainstUnfinishedRequests($provider, isSelf: true);
+        }
+
         $provider->update(['status' => $newStatus]);
+
         return $provider->fresh();
+    }
+
+    /**
+     * يمنع إيقاف الحساب ما دام هناك طلب قيد التنفيذ، ويوضّح في الرسالة عدد
+     * الطلبات وأرقامها حتى يعرف مزود الخدمة ما الذي عليه إنهاؤه.
+     */
+    private function guardAgainstUnfinishedRequests(Provider $provider, bool $isSelf): void
+    {
+        $activeRequests = $provider->serviceRequests()
+            ->whereIn('status', RequestStatusEnum::activeValues())
+            ->orderBy('id')
+            ->pluck('status', 'id');
+
+        if ($activeRequests->isEmpty()) {
+            return;
+        }
+
+        $count = $activeRequests->count();
+        $ids = $activeRequests->keys()->implode('، ');
+        $subject = $isSelf ? 'حسابك' : "حساب «{$provider->name}»";
+
+        throw ValidationException::withMessages([
+            'status' => $count === 1
+                ? "لا يمكن إيقاف {$subject} حالياً بسبب وجود طلب قيد التنفيذ (رقم {$ids}). يجب إنهاء الطلب أولاً."
+                : "لا يمكن إيقاف {$subject} حالياً بسبب وجود {$count} طلبات قيد التنفيذ (الأرقام: {$ids}). يجب إنهاؤها أولاً.",
+        ]);
     }
 
     public function searchProviders(array $filters): mixed
@@ -127,6 +164,12 @@ class ProviderService implements ProviderServiceInterface
     public function updateProviderStatusForAdmin(int $providerId, string $status): object
     {
         $provider = Provider::findOrFail($providerId);
+
+        // زر «إيقاف» في الداشبورد يرسل suspended، وهو ما يُخرج الحرفي من الخدمة
+        // فعلياً. أما busy فهو انشغال مؤقت لا يقطع الطلب الجاري.
+        if ($status === ProviderStatusEnum::Suspended->value) {
+            $this->guardAgainstUnfinishedRequests($provider, isSelf: false);
+        }
 
         $provider->update([
             'status' => $status
