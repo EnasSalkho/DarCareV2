@@ -28,7 +28,10 @@ class FavoriteService implements FavoriteServiceInterface
     public function list(int $userId): mixed
     {
         return Favorite::where('user_id', $userId)
-            ->with([]) // No direct model cross-reference; provider data fetched via ID
+            // صف المفضلة لا يُحذف عند إيقاف الحرفي، لكنه يختفي من القائمة ما دام
+            // خارج الخدمة ويعود تلقائياً عند تفعيله. بدون هذا كان الحرفي الموقوف
+            // يظل ظاهراً للعميل في مفضلته رغم اختفائه من الخريطة والقوائم.
+            ->whereHas('provider', fn ($query) => $query->visibleToClients())
             ->paginate(15);
     }
 

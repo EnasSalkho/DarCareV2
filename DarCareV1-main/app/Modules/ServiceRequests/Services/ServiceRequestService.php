@@ -26,6 +26,11 @@ class ServiceRequestService implements ServiceRequestServiceInterface
 
     public function createRequest(int $userId, array $data): object
     {
+        // إخفاء الحرفي من القوائم والخريطة لا يكفي: rules التحقق تسمح بأي
+        // provider_id موجود، فكان بإمكان العميل إرسال طلب إلى حرفي موقوف أو
+        // غير مُعتمد عبر المفضلة أو رابط مباشر.
+        $this->guardProviderIsBookable((int) $data['provider_id']);
+
         $request = DB::transaction(function () use ($userId, $data) {
             return ServiceRequest::create([
                 'user_id' => $userId,
@@ -302,6 +307,26 @@ class ServiceRequestService implements ServiceRequestServiceInterface
             : null;
 
         return $request;
+    }
+
+    /**
+     * يتحقق أن الحرفي ما زال مرئياً للعملاء قبل قبول أي طلب موجّه إليه.
+     *
+     * يعتمد على النطاق visibleToClients نفسه الذي تستخدمه القوائم والخريطة،
+     * حتى لا يتفرّع تعريف "الحرفي المتاح" إلى تعريفين.
+     */
+    private function guardProviderIsBookable(int $providerId): void
+    {
+        $isBookable = Provider::query()
+            ->visibleToClients()
+            ->whereKey($providerId)
+            ->exists();
+
+        if (! $isBookable) {
+            throw ValidationException::withMessages([
+                'provider_id' => 'هذا الحرفي غير متاح لاستقبال الطلبات حالياً. يرجى اختيار حرفي آخر.',
+            ]);
+        }
     }
 
     /**

@@ -47,10 +47,33 @@ class ProviderController extends Controller
         return $this->success(new ProviderResource($provider), 'Profile updated');
     }
 
+    /**
+     * تبديل حالة استقبال الطلبات.
+     *
+     * يقبل status صراحةً (available|busy) ليطابق مفتاح التبديل في التطبيق،
+     * وبدونه يقلب الحالة الحالية. suspended غير مقبول هنا: إيقاف الحساب قرار
+     * إداري يتم من الداشبورد وحده.
+     */
     public function toggleStatus(Request $request): JsonResponse
     {
-        $provider = $this->providerService->toggleStatus($request->user()->id);
-        return $this->success(['status' => $provider->status], 'Status updated');
+        $validated = $request->validate([
+            'status' => ['nullable', 'string', 'in:available,busy'],
+        ]);
+
+        $provider = $this->providerService->toggleStatus(
+            $request->user()->id,
+            $validated['status'] ?? null
+        );
+
+        $status = $provider->status instanceof \BackedEnum
+            ? $provider->status->value
+            : (string) $provider->status;
+
+        return $this->success([
+            'status' => $status,
+            // يريح التطبيق من تكرار مقارنة النصوص عند رسم المفتاح.
+            'is_available' => $status === \App\Enums\ProviderStatusEnum::Available->value,
+        ], 'Status updated');
     }
 
     public function show(int $id): JsonResponse

@@ -36,15 +36,34 @@ class ProviderService implements ProviderServiceInterface
         return $provider->fresh(['categories']);
     }
 
-    public function toggleStatus(int $providerId): object
+    /**
+     * يبدّل حالة مزود الخدمة بين available و busy.
+     *
+     * يقبل $status صراحةً ليخدم مفتاح التبديل في التطبيق: التبديل الأعمى يقلب
+     * الحالة الخاطئة إذا كانت الواجهة متأخرة عن الخادم. وعند غيابه يعود إلى
+     * السلوك القديم حفاظاً على أي استدعاء قائم.
+     */
+    public function toggleStatus(int $providerId, ?string $status = null): object
     {
         $provider = Provider::findOrFail($providerId);
-        $newStatus = $provider->status === 'available' ? 'busy' : 'available';
+
+        // الإيقاف من الداشبورد قرار إداري: لولا هذا الشرط لكان التبديل يعيد
+        // الحرفي الموقوف إلى available بنفسه، لأن أي حالة غير available كانت
+        // تُقلب إلى available.
+        if ($provider->status === ProviderStatusEnum::Suspended->value) {
+            throw ValidationException::withMessages([
+                'status' => 'حسابك موقوف من قبل الإدارة، ولا يمكنك تغيير حالتك. يرجى التواصل مع الدعم الفني.',
+            ]);
+        }
+
+        $newStatus = $status ?? ($provider->status === ProviderStatusEnum::Available->value
+            ? ProviderStatusEnum::Busy->value
+            : ProviderStatusEnum::Available->value);
 
         // لا يستطيع مزود الخدمة إيقاف استقباله للطلبات وعنده طلب التزم به فعلاً
         // ولم يُنهه بعد: العميل ينتظره، والمحادثة والطلب ما زالا مفتوحين.
         // العودة إلى available مسموحة دائماً.
-        if ($newStatus === 'busy') {
+        if ($newStatus === ProviderStatusEnum::Busy->value) {
             $this->guardAgainstUnfinishedRequests($provider, isSelf: true);
         }
 
