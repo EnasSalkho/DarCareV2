@@ -117,10 +117,14 @@ class ServiceRequestService implements ServiceRequestServiceInterface
             if ($statusEnum?->isFinal()) {
                 $this->conversationService->setRequestConversationReadOnly($request);
             }
-            broadcast(new RequestStatusUpdated($request));
 
             return $request;
         });
+
+        // Broadcast only after the transaction commits. RequestStatusUpdated is
+        // ShouldBroadcastNow, so dispatching inside the transaction would push a
+        // status to the app that a later rollback would undo.
+        broadcast(new RequestStatusUpdated($request));
 
         $this->notifySafely(function () use ($request, $status) {
             $this->notificationService->sendToUser(

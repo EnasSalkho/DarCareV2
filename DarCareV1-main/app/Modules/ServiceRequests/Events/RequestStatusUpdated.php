@@ -25,10 +25,16 @@ class RequestStatusUpdated implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        // البيانات التي ستصل لتطبيق المستخدم
+        // البيانات التي ستصل لتطبيق المستخدم.
+        // الحقول الأصلية (request_id / new_status) باقية كما هي حتى لا ينكسر
+        // التطبيق؛ الباقي إضافات فقط.
         return [
             'request_id' => $this->serviceRequest->id,
             'new_status' => $this->serviceRequest->status,
+            'scheduled_at' => optional($this->serviceRequest->scheduled_at)->toIso8601String(),
+            'provider_id' => $this->serviceRequest->provider_id,
+            'user_id' => $this->serviceRequest->user_id,
+            'updated_at' => optional($this->serviceRequest->updated_at)->toIso8601String(),
         ];
     }
 }

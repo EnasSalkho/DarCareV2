@@ -45,5 +45,17 @@ Broadcast::channel('service-request.{id}', function ($user, $id) {
         return false;
     }
 
-    return $user->id === $serviceRequest->user_id || $user->id === $serviceRequest->provider_id;
+    // السماح فقط للمستخدم صاحب الطلب أو مزود الخدمة بالاستماع لهذه القناة.
+    // لا بد من التحقق من النوع أيضاً: بدونه يستطيع مزود رقمه 5 الاشتراك في قناة
+    // طلب يعود للمستخدم رقم 5.
+    if ($user instanceof User) {
+        return (int) $user->id === (int) $serviceRequest->user_id;
+    }
+
+    if ($user instanceof Provider) {
+        return $serviceRequest->provider_id !== null
+            && (int) $user->id === (int) $serviceRequest->provider_id;
+    }
+
+    return false;
 });

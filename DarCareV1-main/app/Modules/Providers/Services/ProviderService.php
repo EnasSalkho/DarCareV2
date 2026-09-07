@@ -6,7 +6,10 @@ namespace App\Modules\Providers\Services;
 use App\Modules\Providers\Contracts\ProviderServiceInterface;
 use App\Modules\Providers\Models\Provider;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Enums\ProviderStatusEnum;
+use App\Mail\ProviderApprovedMail;
 use App\Services\LocationClient;
 
 class ProviderService implements ProviderServiceInterface
@@ -146,6 +149,8 @@ class ProviderService implements ProviderServiceInterface
 ): object {
     $provider = Provider::findOrFail($providerId);
 
+    $wasApproved = $provider->verification_status?->value === 'approved';
+
     $provider->update([
         'verification_status' => $verificationStatus,
         'rejection_reason' => $verificationStatus === 'rejected'
@@ -153,6 +158,38 @@ class ProviderService implements ProviderServiceInterface
             : null,
     ]);
 
-    return $provider->fresh();
+    $provider = $provider->fresh();
+
+    // Only on the transition into approved, so re-saving an already approved
+    // provider does not spam them.
+    if ($verificationStatus === 'approved' && ! $wasApproved) {
+        $this->sendApprovalMail($provider);
+    }
+
+    return $provider;
 }
+
+    /**
+     * A failed mail delivery must not roll back the approval itself, so the
+     * error is logged and swallowed.
+     */
+    private function sendApprovalMail(Provider $provider): void
+    {
+        if (! filter_var($provider->email, FILTER_VALIDATE_EMAIL)) {
+            Log::warning('Skipped approval mail: invalid provider email', [
+                'provider_id' => $provider->id,
+            ]);
+
+            return;
+        }
+
+        try {
+            Mail::to($provider->email)->send(new ProviderApprovedMail($provider));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send provider approval mail', [
+                'provider_id' => $provider->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
 }
