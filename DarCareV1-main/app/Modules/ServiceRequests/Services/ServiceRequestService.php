@@ -42,6 +42,10 @@ class ServiceRequestService implements ServiceRequestServiceInterface
             ]);
         });
 
+        // يصل الطلب الجديد لمزود الخدمة مباشرة على قناته الخاصة، بدل أن ينتظر
+        // حتى يسحب الشاشة. البثّ بعد إغلاق الـ transaction لأن الحدث ShouldBroadcastNow.
+        $this->broadcastSafely($request);
+
         $this->notifySafely(function () use ($data, $request) {
             $this->notificationService->sendToProvider(
                 (int) $data['provider_id'],
@@ -124,7 +128,7 @@ class ServiceRequestService implements ServiceRequestServiceInterface
         // Broadcast only after the transaction commits. RequestStatusUpdated is
         // ShouldBroadcastNow, so dispatching inside the transaction would push a
         // status to the app that a later rollback would undo.
-        broadcast(new RequestStatusUpdated($request));
+        $this->broadcastSafely($request);
 
         $this->notifySafely(function () use ($request, $status) {
             $this->notificationService->sendToUser(
@@ -298,6 +302,27 @@ class ServiceRequestService implements ServiceRequestServiceInterface
             : null;
 
         return $request;
+    }
+
+    /**
+     * يبثّ حالة الطلب على قنوات Pusher.
+     *
+     * فشل البثّ يجب ألا يُسقط الطلب: الحالة محفوظة في قاعدة البيانات فعلاً عند
+     * هذه النقطة، وانقطاع Pusher كان سيرجع 500 لمزود الخدمة رغم نجاح التحديث.
+     */
+    private function broadcastSafely(ServiceRequest $request): void
+    {
+        try {
+            broadcast(new RequestStatusUpdated($request));
+        } catch (Throwable $e) {
+            Log::warning('Service request status broadcast failed after commit', [
+                'service' => 'pusher',
+                'service_request_id' => $request->id,
+                'status' => (string) $request->status,
+                'exception' => $e::class,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function notifySafely(callable $callback, string $type, int $requestId): void
