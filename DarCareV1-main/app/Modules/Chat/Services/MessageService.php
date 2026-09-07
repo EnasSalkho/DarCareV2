@@ -37,6 +37,20 @@ $isParticipant = $conversation->participants()
     ->whereNull('left_at')
     ->exists();
 
+// Support threads are opened by the customer or provider alone; the admin
+// answering from the dashboard is never added as a participant, so joining
+// them here is what lets support actually reply. ConversationPolicy already
+// grants admins sendMessage on support conversations — without this the
+// service contradicted the policy and answered 403.
+if (! $isParticipant
+    && $conversation->isSupport()
+    && $actor instanceof \App\Modules\Users\Models\User
+    && $actor->isAdmin()
+) {
+    $this->joinAsParticipant($conversation, $actor);
+    $isParticipant = true;
+}
+
 if (! $isParticipant) {
     abort(403, 'This action is unauthorized. You are not a participant.');
 }
@@ -138,5 +152,23 @@ if (! $isParticipant) {
         }
 
         return $message;
+    }
+
+    /**
+     * Adds the actor to the conversation, reviving a previous participation
+     * rather than creating a duplicate row.
+     */
+    private function joinAsParticipant(Conversation $conversation, object $actor): void
+    {
+        $participant = \App\Modules\Chat\Models\ConversationParticipant::query()
+            ->firstOrNew([
+                'conversation_id' => $conversation->id,
+                'participant_type' => ActorHelper::morphType($actor),
+                'participant_id' => ActorHelper::morphId($actor),
+            ]);
+
+        $participant->left_at = null;
+        $participant->joined_at = $participant->joined_at ?? now();
+        $participant->save();
     }
 }

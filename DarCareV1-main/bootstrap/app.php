@@ -33,6 +33,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'provider.verified' => \App\Http\Middleware\EnsureProviderVerified::class,
+        ]);
+
+        // Runs on every API request: a token issued before an admin rejected
+        // the account would otherwise keep working.
+        $middleware->api(append: [
+            \App\Http\Middleware\EnsureProviderVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

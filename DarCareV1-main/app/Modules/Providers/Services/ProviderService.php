@@ -175,6 +175,12 @@ class ProviderService implements ProviderServiceInterface
             : null,
     ]);
 
+    // Losing approval must take effect immediately: an already-issued token
+    // would otherwise keep working until it expired.
+    if ($verificationStatus !== 'approved') {
+        $provider->tokens()->delete();
+    }
+
     $provider = $provider->fresh();
 
     // Only on a real transition, so re-saving the same decision does not spam

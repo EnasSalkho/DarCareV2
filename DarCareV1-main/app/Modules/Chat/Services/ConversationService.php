@@ -66,7 +66,7 @@ class ConversationService implements ConversationServiceInterface
                 }
             }
 
-            return $conversation->fresh(['lastMessage', 'participants', 'serviceRequest']);
+            return $conversation->fresh(['lastMessage', 'participants.participant', 'serviceRequest']);
         });
     }
 
@@ -87,7 +87,7 @@ class ConversationService implements ConversationServiceInterface
                 ->first();
 
             if ($existing) {
-                return $existing->load(['lastMessage', 'participants', 'serviceRequest']);
+                return $existing->load(['lastMessage', 'participants.participant', 'serviceRequest']);
             }
 
             $conversation = Conversation::create([
@@ -100,7 +100,7 @@ class ConversationService implements ConversationServiceInterface
 
             $this->ensureParticipant($conversation, $user);
 
-            return $conversation->fresh(['lastMessage', 'participants', 'serviceRequest']);
+            return $conversation->fresh(['lastMessage', 'participants.participant', 'serviceRequest']);
         });
     }
 
@@ -117,7 +117,7 @@ class ConversationService implements ConversationServiceInterface
                 ->first();
 
             if ($existing) {
-                return $existing->load(['lastMessage', 'participants', 'serviceRequest']);
+                return $existing->load(['lastMessage', 'participants.participant', 'serviceRequest']);
             }
 
             $conversation = Conversation::create([
@@ -130,7 +130,7 @@ class ConversationService implements ConversationServiceInterface
 
             $this->ensureParticipant($conversation, $provider);
 
-            return $conversation->fresh(['lastMessage', 'participants', 'serviceRequest']);
+            return $conversation->fresh(['lastMessage', 'participants.participant', 'serviceRequest']);
         });
     }
 
@@ -340,7 +340,13 @@ class ConversationService implements ConversationServiceInterface
         });
     }
 
-    return $conversation;
+    // ParticipantResource reads the name off the loaded participant model, so
+    // without this the other side shows up as an unknown user.
+    return $conversation->load([
+        'lastMessage',
+        'participants.participant',
+        'serviceRequest',
+    ]);
 }
 
 
