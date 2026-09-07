@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Enums\ProviderStatusEnum;
 use App\Mail\ProviderApprovedMail;
+use App\Mail\ProviderRejectedMail;
 use App\Services\LocationClient;
 
 class ProviderService implements ProviderServiceInterface
@@ -149,7 +150,7 @@ class ProviderService implements ProviderServiceInterface
 ): object {
     $provider = Provider::findOrFail($providerId);
 
-    $wasApproved = $provider->verification_status?->value === 'approved';
+    $previousStatus = $provider->verification_status?->value;
 
     $provider->update([
         'verification_status' => $verificationStatus,
@@ -160,23 +161,30 @@ class ProviderService implements ProviderServiceInterface
 
     $provider = $provider->fresh();
 
-    // Only on the transition into approved, so re-saving an already approved
-    // provider does not spam them.
-    if ($verificationStatus === 'approved' && ! $wasApproved) {
-        $this->sendApprovalMail($provider);
+    // Only on a real transition, so re-saving the same decision does not spam
+    // the provider with a duplicate email.
+    if ($verificationStatus !== $previousStatus) {
+        if ($verificationStatus === 'approved') {
+            $this->sendVerificationMail($provider, new ProviderApprovedMail($provider), 'approval');
+        } elseif ($verificationStatus === 'rejected') {
+            $this->sendVerificationMail($provider, new ProviderRejectedMail($provider), 'rejection');
+        }
     }
 
     return $provider;
 }
 
     /**
-     * A failed mail delivery must not roll back the approval itself, so the
+     * A failed mail delivery must not roll back the decision itself, so the
      * error is logged and swallowed.
      */
-    private function sendApprovalMail(Provider $provider): void
-    {
+    private function sendVerificationMail(
+        Provider $provider,
+        \Illuminate\Mail\Mailable $mailable,
+        string $kind
+    ): void {
         if (! filter_var($provider->email, FILTER_VALIDATE_EMAIL)) {
-            Log::warning('Skipped approval mail: invalid provider email', [
+            Log::warning("Skipped {$kind} mail: invalid provider email", [
                 'provider_id' => $provider->id,
             ]);
 
@@ -184,9 +192,9 @@ class ProviderService implements ProviderServiceInterface
         }
 
         try {
-            Mail::to($provider->email)->send(new ProviderApprovedMail($provider));
+            Mail::to($provider->email)->send($mailable);
         } catch (\Throwable $e) {
-            Log::error('Failed to send provider approval mail', [
+            Log::error("Failed to send provider {$kind} mail", [
                 'provider_id' => $provider->id,
                 'error' => $e->getMessage(),
             ]);
