@@ -17,4 +17,10 @@ interface ProviderServiceInterface
     public function getAllProvidersForAdmin(?string $status): mixed;
     public function updateProviderStatusForAdmin(int $providerId, string $status): object;
     public function getProvidersByCategory(int $categoryId): mixed;
+    
+    public function updateProviderVerificationStatusForAdmin(
+    int $providerId,
+    string $verificationStatus,
+    ?string $rejectionReason = null
+): object;
 }

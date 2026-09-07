@@ -14,12 +14,14 @@ class LocationClient
     }
 
     public function getNearbyOwners(
-        float $latitude,
-        float $longitude,
-        float $radius,
-        string $type
-    ): array {
-        $response = Http::timeout(10)->get(
+    float $latitude,
+    float $longitude,
+    float $radius,
+    string $type
+): array {
+    $response = Http::acceptJson()
+        ->timeout(10)
+        ->get(
             $this->baseUrl . '/api/v1/addresses/nearby-owners',
             [
                 'latitude' => $latitude,
@@ -29,14 +31,14 @@ class LocationClient
             ]
         );
 
-        if ($response->failed()) {
-            throw new \Exception(
-                'Location service error: ' . $response->body()
-            );
-        }
-
-        return $response->json('data.ids', []);
+    if ($response->failed()) {
+        throw new \Exception(
+            'Location service error: ' . $response->body()
+        );
     }
+
+    return $response->json('data', []);
+}
 
     public function getProviderLocation(int $providerId): array
     {

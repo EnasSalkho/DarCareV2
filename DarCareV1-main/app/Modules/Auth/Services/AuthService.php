@@ -50,17 +50,26 @@ class AuthService implements AuthServiceInterface
 
     public function registerProvider(RegisterProviderRequest $request): array
     {
-        $imagePath = $request->file('profile_image')->store('providers/images', 'public');
+        $profileImagePath = $request->file('profile_image')
+    ->store('providers/images', 'public');
+
+$identityImagePath = $request->file('identity_image')
+    ->store('providers/identity', 'public');
 
         $provider = Provider::create([
-            'name'                => $request->name,
-            'phone'               => $request->phone,
-            'email'               => $request->email,
-            'password'            => Hash::make($request->password),
-            'years_of_experience' => $request->years_of_experience,
-            'bio'                 => $request->bio,
-            'profile_image'       => $imagePath,
-        ]);
+    'name'                => $request->name,
+    'phone'               => $request->phone,
+    'email'               => $request->email,
+    'password'            => Hash::make($request->password),
+    'years_of_experience' => $request->years_of_experience,
+    'bio'                 => $request->bio,
+
+    'profile_image'      => $profileImagePath,
+    'identity_image'     => $identityImagePath,
+
+    'verification_status' => 'pending',
+    'status'              => 'available',
+]);
 
         $provider->categories()->sync($request->category_ids);
 

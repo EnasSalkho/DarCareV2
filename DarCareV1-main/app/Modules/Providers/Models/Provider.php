@@ -23,17 +23,20 @@ class Provider extends Authenticatable
     protected $table = 'providers';
 
     protected $fillable = [
-        'name',
-        'phone',
-        'email',
-        'password',
-        'years_of_experience',
-        'bio',
-        'profile_image',
-        'status',
-        'rating_avg',
-        'fcm_token',
-    ];
+    'name',
+    'phone',
+    'email',
+    'password',
+    'years_of_experience',
+    'bio',
+    'profile_image',
+    'identity_image',
+    'status',
+    'verification_status',
+    'rejection_reason',
+    'rating_avg',
+    'fcm_token',
+];
 
     protected $hidden = [
         'password',
@@ -42,11 +45,12 @@ class Provider extends Authenticatable
     ];
 
     protected function casts(): array
-    {
-        return [
-            'rating_avg' => 'decimal:2',
-        ];
-    }
+{
+    return [
+        'rating_avg' => 'decimal:2',
+        'verification_status' => \App\Enums\ProviderVerificationStatusEnum::class,
+    ];
+}
 
     public function getMorphClass(): string
     {

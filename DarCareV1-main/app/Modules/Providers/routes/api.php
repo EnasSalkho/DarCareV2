@@ -23,6 +23,10 @@ Route::middleware('auth:sanctum')->prefix('provider')->name('provider.')->group(
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     Route::get('providers', [AdminProviderController::class, 'index']);
     Route::patch('providers/{id}/status', [AdminProviderController::class, 'updateStatus']);
+    Route::patch(
+    'providers/{id}/verification-status',
+    [AdminProviderController::class, 'updateVerificationStatus']
+);
 });
 Route::get(
     'providers/category/{categoryId}',

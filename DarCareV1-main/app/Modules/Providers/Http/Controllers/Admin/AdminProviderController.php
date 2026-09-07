@@ -8,6 +8,7 @@ use App\Enums\ProviderStatusEnum;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Enum;
+use App\Enums\ProviderVerificationStatusEnum;
 
 class AdminProviderController extends Controller
 {
@@ -47,5 +48,34 @@ class AdminProviderController extends Controller
         ], 200);
     }
 
-    
+    public function updateVerificationStatus(
+    Request $request,
+    int $id
+): JsonResponse {
+    $request->validate([
+        'verification_status' => [
+            'required',
+            new Enum(ProviderVerificationStatusEnum::class)
+        ],
+
+        'rejection_reason' => [
+            'nullable',
+            'string',
+            'max:1000',
+            'required_if:verification_status,rejected',
+        ],
+    ]);
+
+    $provider = $this->providerService->updateProviderVerificationStatusForAdmin(
+        $id,
+        $request->verification_status,
+        $request->rejection_reason
+    );
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'تم تحديث حالة التحقق بنجاح',
+        'data' => $provider,
+    ], 200);
+}
 }

@@ -65,22 +65,34 @@ class ProviderController extends Controller
         return $this->success(ProviderResource::collection($providers));
     }
 
-    public function nearby(Request $request): JsonResponse
-    {
-        $request->validate([
-            'latitude'  => ['required', 'numeric'],
-            'longitude' => ['required', 'numeric'],
-            'radius'    => ['nullable', 'numeric', 'max:100'],
-        ]);
+    // app/Modules/Providers/Http/Controllers/ProviderController.php
 
-        $providers = $this->providerService->getNearbyProviders(
-            $request->latitude,
-            $request->longitude,
-            $request->radius ?? 10
-        );
+public function nearby(\Illuminate\Http\Request $request)
+{
+    // التحقق من المدخلات
+    $request->validate([
+        'latitude'    => 'required|numeric',
+        'longitude'   => 'required|numeric',
+        'radius'      => 'nullable|numeric',
+        'category_id' => 'nullable|integer' // 💡 جعلناه اختياري ليعمل في كل الحالات
+    ]);
 
-        return $this->success(ProviderResource::collection($providers));
-    }
+    $radius = $request->input('radius', 10); // مسافة افتراضية 10 كيلو لو لم يرسلها المستخدم
+    $categoryId = $request->input('category_id');
+
+    // استدعاء الخدمة
+    $providers = $this->providerService->getNearbyProviders(
+        $request->latitude,
+        $request->longitude,
+        $radius,
+        $categoryId
+    );
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $providers
+    ]);
+}
     public function byCategory(int $categoryId): JsonResponse
     {
         $providers = $this->providerService->getProvidersByCategory($categoryId);

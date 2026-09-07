@@ -6,6 +6,7 @@ use App\Modules\Locations\Http\Resources\AddressResource;
 use App\Modules\Locations\Services\LocationService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class LocationController extends Controller
@@ -32,30 +33,27 @@ class LocationController extends Controller
         ]);
     }
     
-    public function nearbyOwners(\Illuminate\Http\Request $request): JsonResponse
-    {
-        $request->validate([
-            'latitude'  => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'radius'    => 'nullable|numeric',
-            'type'      => 'required|string'
-        ]);
+    public function nearbyOwners(Request $request)
+{
+    $request->validate([
+        'latitude'  => 'required|numeric',
+        'longitude' => 'required|numeric',
+        'radius'    => 'nullable|numeric',
+        'type'      => 'required|string',
+    ]);
 
-        // استدعاء الخدمة لجلب الـ IDs
-        $ids = $this->locationService->getNearbyOwners(
-            $request->latitude, 
-            $request->longitude, 
-            $request->radius, 
-            $request->type
-        );
+    $nearbyOwners = $this->locationService->getNearbyOwners(
+        (float) $request->latitude,
+        (float) $request->longitude,
+        (float) ($request->radius ?? 10),
+        $request->type
+    );
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'ids' => $ids
-            ]
-        ]);
-    }
+    return response()->json([
+        'status' => 'success',
+        'data' => $nearbyOwners,
+    ]);
+}
 
         public function index(string $ownerType, int $ownerId): \Illuminate\Http\JsonResponse
     {
